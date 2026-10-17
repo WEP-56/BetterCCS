@@ -1140,23 +1140,23 @@ function App() {
           ? t("appPage.memory")
           : t("appPage.providers");
 
-  // 供应商页的页头：只有图标 + 「供应商」，主操作靠左跟标题站一队，⋯ 让到右边和
-  // 窗口按钮挨着。加粗大字的应用名属于过度强调，去掉之后页头 Quiet 很多。
+  // 供应商页的页头：左边只剩一个应用图标，主操作靠左跟它站一队，⋯ 让到右边和窗口按钮
+  // 挨着。应用名和页面名都不写——加粗大字属于过度强调，只剩图标反而最安静。
   const renderProvidersHeader = () => (
     <AppPageHeader
       variant="app"
       icon={<AppGlyph app={activeApp} size={20} badgeClassName="bg-app" />}
-      subtitle={appPageName}
+      label={appPageName}
       groupActionsWithControls
       toolbar={
         <>
           <Button
-            variant="solid"
+            variant="soft"
             size="compact"
             onClick={() => openAddProvider(currentModeView)}
           >
             <Plus className="h-4 w-4" />
-            {t("provider.addProvider")}
+            {t("provider.add")}
           </Button>
           {(settingsData?.showProviderSearch ?? true) && (
             <HoverTip

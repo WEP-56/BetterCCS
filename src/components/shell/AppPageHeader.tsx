@@ -17,6 +17,8 @@ interface AppPageHeaderProps {
   variant?: "app" | "page";
   /** 应用页的页面名（如「供应商」），灰字跟在应用名后面；没有 title 时它就是这一屏的标题 */
   subtitle?: ReactNode;
+  /** 页头只剩图标时的读屏标题：视觉上不出现，只给 h1 用 */
+  label?: string;
   /** 标题后面的「?」、Beta 徽标、计数等 */
   titleExtra?: ReactNode;
   /** 标题右侧的工具区（主操作、搜索）：贴着标题往左靠，不跟右边的 ⋯ 挤在一起 */
@@ -40,6 +42,7 @@ export function AppPageHeader({
   title,
   variant = "page",
   subtitle,
+  label,
   titleExtra,
   toolbar,
   actions,
@@ -90,6 +93,9 @@ export function AppPageHeader({
           >
             {title}
           </h1>
+        )}
+        {!hasTitle && !subtitle && label && (
+          <h1 className="sr-only">{label}</h1>
         )}
         {(subtitle || titleExtra) && (
           <div

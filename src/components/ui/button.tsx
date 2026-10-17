@@ -24,6 +24,8 @@ const buttonVariants = cva(
         // 主题色白字对比度偏低，统一 600 字重
         solid:
           "border border-transparent bg-action font-semibold text-action-fg hover:bg-action-hover",
+        // 柔和填充：中等优先级的入口（页头的「添加」）——不描边、也不反白
+        soft: "border border-transparent bg-subtle text-fg-1 hover:bg-selected",
         // 中性描边：卡片上的「切换」「添加」「设为默认」等
         neutral:
           "border border-border-strong bg-surface text-fg-1 hover:bg-subtle disabled:opacity-100 disabled:border-border disabled:bg-transparent disabled:text-fg-3",

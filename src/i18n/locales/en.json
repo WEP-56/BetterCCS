@@ -99,6 +99,7 @@
     "windowClose": "Close window"
   },
   "provider": {
+    "add": "Add",
     "connectivityCheck": "Connectivity check",
     "tabProvider": "Provider",
     "tabUniversal": "Universal",
