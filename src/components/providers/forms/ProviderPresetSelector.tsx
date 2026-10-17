@@ -43,12 +43,12 @@ import {
   presetDomain,
   presetGroup,
   presetMatches,
-  presetNeedsRouting,
+  presetUnsupported,
   presetPlanLabel,
   presetRegionLabel,
   presetRowGroup,
   presetRowName,
-  presetRowNeedsRouting,
+  presetRowUnsupported,
   presetVersionLabel,
   presetVersionLayout,
   presetVersionShortLabel,
@@ -292,7 +292,7 @@ function PresetBar({
                 <span className="truncate text-strong text-fg-1" title={name}>
                   {name}
                 </span>
-                {presetNeedsRouting(appId, entry) && <NeedsRouteBadge />}
+                {presetUnsupported(appId, entry) && <FormatUnsupportedBadge />}
               </div>
               {domain && (
                 <div className="truncate text-caption text-fg-2">{domain}</div>
@@ -505,11 +505,11 @@ function DimensionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NeedsRouteBadge() {
+function FormatUnsupportedBadge() {
   const { t } = useTranslation();
   return (
     <span className="inline-flex h-[18px] shrink-0 items-center whitespace-nowrap rounded-full border border-border-strong px-1.5 text-badge text-fg-2">
-      {t("providerCard.chip.needsRoute")}
+      {t("providerCard.chip.formatUnsupported")}
     </span>
   );
 }
@@ -619,7 +619,7 @@ function PresetPicker({
         icon={<PresetIconBox preset={first.preset} />}
         name={presetRowName(row, t)}
         detail={presetRowDetail(appId, row, hits, t)}
-        needsRoute={presetRowNeedsRouting(appId, row)}
+        unsupported={presetRowUnsupported(appId, row)}
         selected={row.versions.some((entry) => entry.id === selectedPresetId)}
         onClick={() => onPick(target.id)}
       />
@@ -860,14 +860,14 @@ function PresetRow({
   icon,
   name,
   detail,
-  needsRoute = false,
+  unsupported = false,
   selected = false,
   onClick,
 }: {
   icon: React.ReactNode;
   name: string;
   detail?: string;
-  needsRoute?: boolean;
+  unsupported?: boolean;
   selected?: boolean;
   onClick: () => void;
 }) {
@@ -900,7 +900,7 @@ function PresetRow({
           </span>
         )}
       </span>
-      {needsRoute && <NeedsRouteBadge />}
+      {unsupported && <FormatUnsupportedBadge />}
     </button>
   );
 }

@@ -235,4 +235,15 @@ export const usageApi = {
   getDataSourceBreakdown: async (): Promise<DataSourceSummary[]> => {
     return invoke("get_usage_data_sources");
   },
+  /** 计费模型的来源（每家应用一条：models.dev / 手动维护） */
+  getPricingModelSource: async (appType: AppId): Promise<string> => {
+    return invoke("get_pricing_model_source", { appType });
+  },
+
+  setPricingModelSource: async (
+    appType: AppId,
+    value: string,
+  ): Promise<void> => {
+    return invoke("set_pricing_model_source", { appType, value });
+  },
 };

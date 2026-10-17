@@ -57,7 +57,6 @@ import {
   EndpointField,
   FullUrlToggle,
   ModelDropdown,
-  type DirectModeFormatNotice,
 } from "./shared";
 import { XaiOAuthSection } from "./XaiOAuthSection";
 import {
@@ -95,7 +94,6 @@ import type {
   PromptCacheRoutingMode,
   ProviderCategory,
 } from "@/types";
-import type { ManagedAuthProvider } from "@/lib/api";
 import type { AppId } from "@/lib/api";
 
 interface EndpointCandidate {
@@ -156,7 +154,6 @@ interface CodexFormFieldsProps {
   onCodexAccountSelect?: (accountId: string | null) => void;
   onCodexAuthSelectionConfirmed?: () => void;
   onCodexAuthSelectionInvalidated?: () => void;
-  onManageAuthAccounts?: (target: ManagedAuthProvider) => void;
   codexOauthSelectionLabel?: string;
   codexOauthNoneOptionLabel?: string;
   codexOauthNoneOptionDescription?: string;
@@ -232,8 +229,6 @@ interface CodexFormFieldsProps {
    * 模型列表 + 高级），没有默认模型字段，列表第一行就是默认模型。
    */
   variant?: "classic" | "stack";
-  /** 应用实际在直连时传：选了要靠路由转换的格式就在格式下面提示后果。 */
-  directModeFormatNotice?: DirectModeFormatNotice;
 }
 
 type CodexCatalogRow = CodexCatalogModel & { rowId: string };
@@ -554,7 +549,6 @@ export function CodexFormFields({
   onCodexAccountSelect,
   onCodexAuthSelectionConfirmed,
   onCodexAuthSelectionInvalidated,
-  onManageAuthAccounts,
   codexOauthSelectionLabel,
   codexOauthNoneOptionLabel,
   codexOauthNoneOptionDescription,
@@ -603,8 +597,6 @@ export function CodexFormFields({
   onLocalProxyHeadersOverrideChange,
   localProxyBodyOverride,
   onLocalProxyBodyOverrideChange,
-  variant = "classic",
-  directModeFormatNotice,
 }: CodexFormFieldsProps) {
   const { t } = useTranslation();
 
@@ -684,12 +676,6 @@ export function CodexFormFields({
       setAdvancedExpanded(true);
     }
   }, [hasAnyAdvancedValue, isXaiOauthPreset]);
-
-  // Stack 布局的高级区（思考能力、Anthropic 专有项、User-Agent、请求覆盖）：填了 UA 或请求
-  // 覆盖才展开，其余多是预设自带的。
-  const [stackAdvancedExpanded, setStackAdvancedExpanded] = useState(
-    isFullUrl || !!customUserAgent || hasRequestOverrides,
-  );
 
   // 显示用的顺序。挪动默认那一行不算修改：没动过列表时保存仍是原来的顺序。
   const orderCatalogModels = (models: CodexCatalogModel[]) =>
@@ -1329,11 +1315,9 @@ export function CodexFormFields({
         </SelectContent>
       </Select>
       {/* 直连下 Chat / Anthropic 发不出请求，按实际模式提示后果；Copilot 恒需路由，单独提示。 */}
-      {directModeFormatNotice &&
-        !isCopilotPreset &&
-        (isChatFormat || isAnthropicFormat) && (
-          <DirectModeFormatWarning notice={directModeFormatNotice} />
-        )}
+      {!isCopilotPreset && (isChatFormat || isAnthropicFormat) && (
+        <DirectModeFormatWarning />
+      )}
       {isCopilotPreset && (
         <p className="text-xs leading-relaxed text-fg-2">
           {t("codexConfig.upstreamFormatCopilotRouteHint")}
@@ -1689,11 +1673,6 @@ export function CodexFormFields({
           mode="select"
           selectedAccountId={selectedGitHubAccountId}
           onAccountSelect={onGitHubAccountSelect}
-          onManageAccounts={
-            onManageAuthAccounts
-              ? () => onManageAuthAccounts("github_copilot")
-              : undefined
-          }
         />
       )}
 
@@ -1705,11 +1684,6 @@ export function CodexFormFields({
           onAccountSelect={onCodexAccountSelect}
           onSelectionConfirmed={onCodexAuthSelectionConfirmed}
           onSelectionInvalidated={onCodexAuthSelectionInvalidated}
-          onManageAccounts={
-            onManageAuthAccounts
-              ? () => onManageAuthAccounts("codex_oauth")
-              : undefined
-          }
           selectionLabel={codexOauthSelectionLabel}
           noneOptionLabel={codexOauthNoneOptionLabel}
           noneOptionDescription={codexOauthNoneOptionDescription}
@@ -1925,139 +1899,6 @@ export function CodexFormFields({
         </div>
       </div>
     );
-
-  if (variant === "stack") {
-    const showFormatFields = shouldShowSpeedTest && !isXaiOauthPreset;
-    const showReasoning = isChatFormat && canEditReasoning;
-    // Copilot 不显示 UA 和请求覆盖，Responses 格式下高级区就空了。
-    const hasStackAdvancedContent =
-      showFullUrlToggle ||
-      (showFormatFields && isAnthropicFormat) ||
-      showReasoning ||
-      userAgentAndOverrides !== null;
-    return (
-      <>
-        {oauthSections}
-        {showFormatFields && upstreamFormatSelect}
-        {apiKeySection}
-        {showFormatFields && isAnthropicFormat && anthropicAuthFieldSelect}
-        {endpointSection}
-
-        {canEditCatalog && (
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-0.5">
-                  <FormLabel>
-                    {t("codexConfig.modelListTitle", {
-                      defaultValue: "模型列表",
-                    })}
-                  </FormLabel>
-                  <HelpTip
-                    title={t("codexConfig.modelListTitle", {
-                      defaultValue: "模型列表",
-                    })}
-                  >
-                    {t("codexConfig.stackModelDefaultHelp", {
-                      defaultValue:
-                        "这些模型会出现在 Codex 的 /model 里，选中后请求直达这家。第一行是默认模型：这家被设为默认时，Codex 默认用它。",
-                    })}
-                  </HelpTip>
-                </div>
-                {renderCatalogActionButtons(
-                  handleAddCatalogRow,
-                  t("codexConfig.addCatalogModel", {
-                    defaultValue: "手动添加",
-                  }),
-                )}
-              </div>
-              <p className="text-xs leading-relaxed text-fg-2">
-                {t("codexConfig.modelListHint", {
-                  defaultValue: "修改后需要重启 Codex。",
-                })}
-              </p>
-            </div>
-            {defaultModelNotInListNotice}
-            {catalogRows.length > 0 ? (
-              renderCatalogRows()
-            ) : (
-              <p className="text-xs leading-relaxed text-fg-2">
-                {t("codexConfig.modelListEmpty", {
-                  defaultValue: "未配置模型：聚合模式下只发布下面的默认模型。",
-                })}
-              </p>
-            )}
-          </div>
-        )}
-        {defaultModelField}
-
-        {hasStackAdvancedContent && (
-          <Collapsible
-            open={stackAdvancedExpanded}
-            onOpenChange={setStackAdvancedExpanded}
-            className="rounded-lg border border-border p-4"
-          >
-            <CollapsibleTrigger asChild>
-              <Button
-                type="button"
-                variant={null}
-                size="sm"
-                className="h-8 w-full justify-start gap-1.5 px-0 text-sm font-medium text-fg-1 hover:opacity-70"
-              >
-                {stackAdvancedExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-                {t("providerForm.advancedOptionsToggle", {
-                  defaultValue: "高级选项",
-                })}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-3 pt-3">
-              {showFullUrlToggle && (
-                <FullUrlToggle
-                  checked={isFullUrl}
-                  onCheckedChange={onFullUrlChange}
-                />
-              )}
-              {showFormatFields &&
-                isAnthropicFormat &&
-                impersonateClaudeCodeToggle}
-              {showFormatFields && isAnthropicFormat && maxOutputTokensField}
-              {showReasoning && (
-                <div
-                  className={cn(
-                    "space-y-3",
-                    showFormatFields &&
-                      isAnthropicFormat &&
-                      "border-t border-border pt-3",
-                  )}
-                >
-                  {reasoningFields}
-                </div>
-              )}
-              {userAgentAndOverrides && (
-                <div
-                  className={cn(
-                    "space-y-3",
-                    (showFullUrlToggle ||
-                      (showFormatFields && isAnthropicFormat) ||
-                      showReasoning) &&
-                      "border-t border-border pt-3",
-                  )}
-                >
-                  {userAgentAndOverrides}
-                </div>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {speedTestModal}
-      </>
-    );
-  }
 
   return (
     <>

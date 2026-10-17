@@ -1,22 +1,16 @@
 import type * as React from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowDown,
-  ArrowUp,
   ChevronDown,
   CircleDot,
-  ListMinus,
-  ListPlus,
   Loader2,
   Minus,
   MoreHorizontal,
   Pencil,
   Play,
-  Plug,
   Plus,
   Power,
   PowerOff,
-  Route,
   Star,
   type LucideIcon,
 } from "lucide-react";
@@ -36,8 +30,6 @@ import type { CardButton, CardPresentation, CardTone } from "./presentation";
 
 const DOT: Record<CardTone | "muted", string> = {
   direct: "bg-direct",
-  route: "bg-route",
-  stack: "bg-stack",
   neutral: "bg-fg-2",
   muted: "bg-fg-3",
 };
@@ -45,10 +37,6 @@ const DOT: Record<CardTone | "muted", string> = {
 /** 主操作位只放图标，名字由 HoverTip 悬停即显（key 见 presentation.ts）。 */
 const BUTTON_ICON: Record<string, LucideIcon> = {
   switch: Play,
-  exitAndUse: Plug,
-  routeHere: Route,
-  queueAdd: ListPlus,
-  queueRemove: ListMinus,
   setDefault: Star,
   add: Plus,
   remove: Minus,
@@ -87,7 +75,7 @@ export function ProviderCardActions({
   onOpenTerminal,
 }: ProviderCardActionsProps) {
   const { t } = useTranslation();
-  const { status, buttons, move, menuItems = [] } = presentation;
+  const { status, buttons, menuItems = [] } = presentation;
 
   return (
     <div className="flex shrink-0 items-center gap-2">
@@ -106,40 +94,6 @@ export function ProviderCardActions({
         ))}
       </div>
 
-      {move && (
-        <div className="flex items-center">
-          <HoverTip
-            content={t("providerCard.action.moveUp", { name: providerName })}
-          >
-            <Button
-              variant="quiet"
-              size="icon-compact"
-              aria-label={t("providerCard.action.moveUp", {
-                name: providerName,
-              })}
-              disabled={!move.onUp}
-              onClick={move.onUp}
-            >
-              <ArrowUp className="h-4 w-4" strokeWidth={1.5} />
-            </Button>
-          </HoverTip>
-          <HoverTip
-            content={t("providerCard.action.moveDown", { name: providerName })}
-          >
-            <Button
-              variant="quiet"
-              size="icon-compact"
-              aria-label={t("providerCard.action.moveDown", {
-                name: providerName,
-              })}
-              disabled={!move.onDown}
-              onClick={move.onDown}
-            >
-              <ArrowDown className="h-4 w-4" strokeWidth={1.5} />
-            </Button>
-          </HoverTip>
-        </div>
-      )}
 
       <IconAction
         tip={t("common.edit")}

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { codexProviderPresets } from "@/config/codexProviderPresets";
 import { providerPresets } from "@/config/claudeProviderPresets";
 import type { Provider } from "@/types";
-import { providerNeedsRouting } from "@/utils/providerCapabilities";
+import { providerFormatUnsupported } from "@/utils/providerCapabilities";
 
 const CODEX_BASE_URL = "https://api.commandcode.ai/provider/v1";
 const CLAUDE_BASE_URL = "https://api.commandcode.ai/provider";
@@ -57,7 +57,7 @@ describe("Command Code provider presets", () => {
     );
 
     expect(preset?.apiFormat).toBe("openai_responses");
-    expect(providerNeedsRouting("codex", provider)).toBe(false);
+    expect(providerFormatUnsupported("codex", provider)).toBe(false);
   });
 
   it("adds the Claude Code Anthropic preset with role model mapping", () => {
@@ -89,6 +89,6 @@ describe("Command Code provider presets", () => {
       preset?.apiFormat,
     );
 
-    expect(providerNeedsRouting("claude", provider)).toBe(true);
+    expect(providerFormatUnsupported("claude", provider)).toBe(true);
   });
 });

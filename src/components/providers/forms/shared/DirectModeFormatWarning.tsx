@@ -1,29 +1,18 @@
 import { useTranslation } from "react-i18next";
 
 /**
- * 应用实际在直连时，这张卡和直连的关系：`inUse` 是正在直连用的那张（保存即写进客户端），
- * `switch` 是别的卡或新卡（切换时会被要求先开路由）。不在直连时不传。
+ * 上游格式要靠协议转换、而本地路由已经下线时，格式下面的后果提示（Claude Code、Codex 共用）。
+ *
+ * 没有路由 = 没有地方做转换：这种格式保存下去也发不出请求，客户端会直接报错。
  */
-export type DirectModeFormatNotice = "inUse" | "switch";
-
-/** 上游格式要靠路由转换、应用却在直连时，格式下面的后果提示（Claude Code、Codex 共用）。 */
-export function DirectModeFormatWarning({
-  notice,
-}: {
-  notice: DirectModeFormatNotice;
-}) {
+export function DirectModeFormatWarning() {
   const { t } = useTranslation();
   return (
     <p className="text-xs leading-relaxed text-warning-text">
-      {notice === "inUse"
-        ? t("providerForm.directModeFormatInUse", {
-            defaultValue:
-              "这张卡正在直连使用：改成这种格式后保存，请求会失败。请先切到路由或聚合。",
-          })
-        : t("providerForm.directModeFormatSwitch", {
-            defaultValue:
-              "直连模式下用不了这种格式，切到路由或聚合后才能用这张卡。",
-          })}
+      {t("providerForm.formatUnsupportedWarning", {
+        defaultValue:
+          "Agent 客户端只认自己的协议格式，选这种格式直连发不出请求。保存后这家用不了，请改用客户端支持的格式。",
+      })}
     </p>
   );
 }

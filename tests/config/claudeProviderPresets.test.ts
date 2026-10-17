@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { providerPresets } from "@/config/claudeProviderPresets";
 import { GPT_CONTEXT_WINDOW_CAP } from "@/lib/modelMetadata";
 import type { Provider } from "@/types";
-import { providerNeedsRouting } from "@/utils/providerCapabilities";
+import { providerFormatUnsupported } from "@/utils/providerCapabilities";
 
 describe("Kimi For Coding Provider Preset", () => {
   const kimiForCoding = providerPresets.find(
@@ -88,7 +88,7 @@ describe("OpenCode Go Provider Preset", () => {
       },
     };
 
-    expect(providerNeedsRouting("claude", provider)).toBe(false);
+    expect(providerFormatUnsupported("claude", provider)).toBe(false);
   });
 });
 

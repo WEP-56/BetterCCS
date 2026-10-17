@@ -293,6 +293,7 @@
     }
   },
   "notifications": {
+    "formatUnsupportedForSwitch": "{{name}} uses a protocol the agent client can't speak directly. Change it to a supported format first.",
     "providerAdded": "Provider added",
     "providerSaved": "Provider configuration saved",
     "providerDeleted": "Provider deleted successfully",
@@ -1551,6 +1552,7 @@
     "openReleaseNotesFailed": "Failed to open release notes:"
   },
   "providerForm": {
+    "formatUnsupportedWarning": "The agent client only speaks its own protocol, so requests will fail with this format. Change it to a supported one.",
     "supplierName": "Provider Name",
     "supplierNameRequired": "Provider Name *",
     "supplierNamePlaceholder": "e.g., Anthropic Official",
@@ -4313,6 +4315,7 @@
     },
     "chip": {
       "official": "Official",
+      "formatUnsupported": "Format unsupported",
       "needsRoute": "Needs routing",
       "directWhenDirect": "Used when direct",
       "default": "Default",
@@ -4323,6 +4326,7 @@
       "defaultModel": "Default model {{model}}"
     },
     "reason": {
+      "formatUnsupported": "The agent client can't speak this format directly; change it to a supported one in the form.",
       "noRoute": "Official subscriptions don't go through routing; available again in direct mode.",
       "noStack": "Official subscriptions can't be used in Aggregation.",
       "officialStack": "Official accounts can only be the default; they can't join the aggregation.",

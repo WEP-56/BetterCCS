@@ -9,7 +9,7 @@ import {
   type PresetRegionKey,
 } from "@/config/presetFamilies";
 import { PRESET_SEARCH_ALIASES } from "@/config/presetSearchAliases";
-import { providerNeedsRouting } from "@/utils/providerCapabilities";
+import { providerFormatUnsupported } from "@/utils/providerCapabilities";
 import type { AnyPreset, PresetEntry } from "./ProviderPresetSelector";
 
 type Translate = (key: string) => unknown;
@@ -422,8 +422,8 @@ export function sortPresetRowsByName<T extends { row: PresetRowItem }>(
   return sortByName(items, (item) => presetRowName(item.row, t));
 }
 
-/** 预设需要经过路由才能用（托管 OAuth、要转换格式的） */
-export function presetNeedsRouting(
+/** 预设的格式 Agent 客户端直连用不了（托管 OAuth、要转换协议、要模型映射的） */
+export function presetUnsupported(
   appId: AppId | undefined,
   entry: PresetEntry,
 ): boolean {
@@ -441,18 +441,18 @@ export function presetNeedsRouting(
     },
   } as Provider;
   try {
-    return providerNeedsRouting(appId, provider);
+    return providerFormatUnsupported(appId, provider);
   } catch {
     return false;
   }
 }
 
-/** 合成的一行只有所有版本都要路由时才挂「需要路由」 */
-export function presetRowNeedsRouting(
+/** 合成的一行只有所有版本都不兼容时才挂「格式不支持」 */
+export function presetRowUnsupported(
   appId: AppId | undefined,
   row: PresetRowItem,
 ): boolean {
-  return row.versions.every((entry) => presetNeedsRouting(appId, entry));
+  return row.versions.every((entry) => presetUnsupported(appId, entry));
 }
 
 /** 账号登录类的副行：用哪家的账号登录 */

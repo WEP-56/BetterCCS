@@ -28,29 +28,26 @@ function pendingNavigation(initial: unknown) {
 
 describe("parseTrayNavigation", () => {
   it("keeps known apps, sections and intents", () => {
-    expect(
-      parseTrayNavigation({
-        app: "claude",
-        intent: "needsRoute",
-        providerId: "copilot",
-      }),
-    ).toEqual({ app: "claude", intent: "needsRoute", providerId: "copilot" });
-    expect(parseTrayNavigation({ app: "grokbuild", intent: "add" })).toEqual({
-      app: "grokbuild",
+    expect(parseTrayNavigation({ app: "claude", intent: "add" })).toEqual({
+      app: "claude",
       intent: "add",
-      providerId: undefined,
     });
-    expect(parseTrayNavigation({ section: "routing" })).toEqual({
-      section: "routing",
+    expect(parseTrayNavigation({ app: "grokbuild" })).toEqual({
+      app: "grokbuild",
+      intent: undefined,
+    });
+    expect(parseTrayNavigation({ section: "network" })).toEqual({
+      section: "network",
     });
   });
 
-  it("drops unknown targets and incomplete needs-route requests", () => {
+  it("drops unknown targets and retired intents", () => {
     expect(parseTrayNavigation(null)).toBeNull();
     expect(parseTrayNavigation({ app: "nope" })).toBeNull();
     expect(parseTrayNavigation({ section: "nope" })).toBeNull();
+    // 路由已下线：托盘再发 needsRoute 也只剩「打开这个应用」
     expect(parseTrayNavigation({ app: "codex", intent: "needsRoute" })).toEqual(
-      { app: "codex" },
+      { app: "codex", intent: undefined },
     );
   });
 });
@@ -64,7 +61,6 @@ describe("useTrayNavigation", () => {
       expect(onNavigate).toHaveBeenCalledWith({
         app: "codex",
         intent: undefined,
-        providerId: undefined,
       }),
     );
     expect(onNavigate).toHaveBeenCalledTimes(1);

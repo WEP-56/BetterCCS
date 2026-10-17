@@ -63,7 +63,6 @@ import {
   type ClaudeDesktopDefaultRoute,
 } from "@/lib/api/providers";
 import { resolveManagedAccountId } from "@/lib/authBinding";
-import type { ManagedAuthProvider } from "@/lib/api";
 import { useCopilotAuth, useCodexOauth, useXaiOauth } from "./hooks";
 import { isOAuthProviderType } from "@/config/constants";
 
@@ -100,7 +99,6 @@ export interface ClaudeDesktopProviderFormProps {
     iconColor?: string;
   };
   showButtons?: boolean;
-  onManageAuthAccounts?: (target: ManagedAuthProvider) => void;
 }
 
 type RouteRow = {
@@ -253,7 +251,6 @@ export function ClaudeDesktopProviderForm({
   onSubmittingChange,
   initialData,
   showButtons = true,
-  onManageAuthAccounts,
 }: ClaudeDesktopProviderFormProps) {
   const { t } = useTranslation();
   const initialMode = isOAuthProviderType(initialData?.meta?.providerType)
@@ -994,22 +991,12 @@ export function ClaudeDesktopProviderForm({
                     mode="select"
                     selectedAccountId={selectedGitHubAccountId}
                     onAccountSelect={setSelectedGitHubAccountId}
-                    onManageAccounts={
-                      onManageAuthAccounts
-                        ? () => onManageAuthAccounts("github_copilot")
-                        : undefined
-                    }
                   />
                 ) : activeProviderType === "codex_oauth" ? (
                   <CodexOAuthSection
                     mode="select"
                     selectedAccountId={selectedCodexAccountId}
                     onAccountSelect={setSelectedCodexAccountId}
-                    onManageAccounts={
-                      onManageAuthAccounts
-                        ? () => onManageAuthAccounts("codex_oauth")
-                        : undefined
-                    }
                     fastModeEnabled={codexFastMode}
                     onFastModeChange={setCodexFastMode}
                   />

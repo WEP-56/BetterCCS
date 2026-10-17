@@ -37,7 +37,7 @@ import {
   resolveSidebarToday,
   type SidebarTodayItem,
 } from "@/components/usage/format";
-import { useSidebarStatus, type AppNavStatus } from "@/hooks/useSidebarStatus";
+import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { HoverTip } from "@/components/ui/hover-tip";
 import { DRAG_REGION_ATTR, DRAG_REGION_STYLE, isMac } from "@/lib/platform";
 import { cn } from "@/lib/utils";
@@ -217,7 +217,7 @@ function MainDirectory({
   const { moneyShort } = useMoneyFormat();
   const { data: settings } = useSettingsQuery();
   const { hasUpdate } = useUpdate();
-  const { appStatus, todayCost, todayTokens, todayRequests, todayHitRate } =
+  const { todayCost, todayTokens, todayRequests, todayHitRate } =
     useSidebarStatus();
   const apps = APP_IDS.filter((app) => visibleApps[app]);
   const onAppPage = isAppPage(view);
@@ -297,7 +297,6 @@ function MainDirectory({
               app={app}
               collapsed={collapsed}
               selected={onAppPage && activeApp === app}
-              status={appStatus(app)}
               onSelect={() => onSelectApp(app)}
             />
           ))}
@@ -365,22 +364,18 @@ function AppNavItem({
   app,
   collapsed,
   selected,
-  status,
   onSelect,
 }: {
   app: AppId;
   collapsed: boolean;
   selected: boolean;
-  status: AppNavStatus;
   onSelect: () => void;
 }) {
-  const { t } = useTranslation();
   const name = APP_DISPLAY_NAME[app];
-  const tip = status.alert ? `${name} · ${t("nav.needsAttention")}` : name;
+  const tip = name;
   const badgeBg = selected ? "bg-selected" : "bg-sidebar";
 
   if (collapsed) {
-    const showAlert = Boolean(status.alert);
     return (
       <HoverTip content={tip} side="right" disableHoverableContent>
         <button
@@ -395,17 +390,6 @@ function AppNavItem({
         >
           <span className="relative flex">
             <AppGlyph app={app} size={20} badgeClassName={badgeBg} />
-            {showAlert && (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "absolute -end-[7px] -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-danger text-white",
-                  selected ? "border-selected" : "border-sidebar",
-                )}
-              >
-                <AlertGlyph className="h-2 w-2" />
-              </span>
-            )}
           </span>
         </button>
       </HoverTip>
@@ -424,13 +408,6 @@ function AppNavItem({
     >
       <AppGlyph app={app} size={18} badgeClassName={badgeBg} />
       <span className="min-w-0 flex-1 truncate">{name}</span>
-      {status.alert ? (
-        <span
-          role="img"
-          aria-label={t("nav.needsAttention")}
-          className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger"
-        />
-      ) : null}
     </button>
   );
 }

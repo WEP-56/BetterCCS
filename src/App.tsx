@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -12,7 +11,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ExternalLink,
-  KeyRound,
   MoreHorizontal,
   Plus,
   Search,
@@ -23,7 +21,6 @@ import { KNOWN_APP_TYPES, type AppTypeFilter } from "@/types/usage";
 import type { EnvConflict } from "@/types/env";
 import {
   providersQueryOptions,
-  proxyKeys,
   useProvidersQuery,
   useSettingsQuery,
 } from "@/lib/query";
@@ -40,7 +37,6 @@ import { openclawKeys, useOpenClawHealth } from "@/hooks/useOpenClaw";
 import { hermesKeys, useOpenHermesWebUI } from "@/hooks/useHermes";
 import { hermesApi } from "@/lib/api/hermes";
 import type { ProviderEditorSave } from "@/lib/api/providers";
-import { useProxyStatus } from "@/hooks/useProxyStatus";
 import { useUsageCacheBridge } from "@/hooks/useUsageCacheBridge";
 import {
   useTrayAppPageSeen,
@@ -86,7 +82,6 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { OpenTerminalDialog } from "@/components/providers/OpenTerminalDialog";
 import { discardUnsavedChanges, hasUnsavedChanges } from "@/lib/unsavedChanges";
 import { SettingsPage } from "@/components/settings/SettingsPage";
-import { AuthCenterPanel } from "@/components/settings/AuthCenterPanel";
 import { AppsPage } from "@/components/apps/AppsPage";
 import {
   checkToolUpdatesInBackground,
@@ -94,9 +89,6 @@ import {
 } from "@/components/apps/useToolManagement";
 import { UsagePage } from "@/components/usage/UsagePage";
 import { EnvWarningBanner } from "@/components/env/EnvWarningBanner";
-import { SwitchModePanel } from "@/components/providers/mode/SwitchModePanel";
-import { proxyApi } from "@/lib/api/proxy";
-import type { AppMode, StartupAttachFailure } from "@/types/proxy";
 import UsageScriptModal from "@/components/UsageScriptModal";
 import UnifiedMcpPanel from "@/components/mcp/UnifiedMcpPanel";
 import PromptPanel from "@/components/prompts/PromptPanel";
@@ -105,10 +97,8 @@ import UnifiedSkillsPanel from "@/components/skills/UnifiedSkillsPanel";
 import { DeepLinkImportDialog } from "@/components/DeepLinkImportDialog";
 import { FirstRunNoticeDialog } from "@/components/FirstRunNoticeDialog";
 import { WhatsNewNotice } from "@/components/WhatsNewDialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HoverTip } from "@/components/ui/hover-tip";
-import { HelpTip } from "@/components/ui/help-tip";
 import { PageTabs } from "@/components/ui/page-tabs";
 import {
   DropdownMenu,
@@ -131,7 +121,7 @@ import OpenClawHealthBanner from "@/components/openclaw/OpenClawHealthBanner";
 import HermesMemoryPanel, {
   HermesMemorySaveButton,
 } from "@/components/hermes/HermesMemoryPanel";
-import { APP_IDS, DEFAULT_VISIBLE_APPS, isModeAppId } from "@/config/appConfig";
+import { APP_IDS, DEFAULT_VISIBLE_APPS } from "@/config/appConfig";
 
 interface SyncStatusUpdatedPayload {
   source?: string;
@@ -177,23 +167,6 @@ function App() {
   useEffect(() => {
     setProviderSearchOpen(false);
   }, [activeApp, currentView]);
-  // 供应商页顶部正在看的那格（直连 / 路由 / 聚合），由 SwitchModePanel 报上来。打开新增、
-  // 编辑时记下当时那格，表单按它选布局：在聚合那格打开就是聚合的简化表单。
-  const [providerModeView, setProviderModeView] = useState<{
-    app: AppId;
-    view: AppMode;
-  } | null>(null);
-  const [formModeView, setFormModeView] = useState<AppMode>();
-  const handleProviderModeViewChange = useCallback(
-    (app: AppId, view: AppMode) => setProviderModeView({ app, view }),
-    [],
-  );
-  // 托盘里点了直连下需要路由的那家：打开应用页后弹「需要路由」对话框
-  const [trayNeedsRoute, setTrayNeedsRoute] = useState<{
-    app: AppId;
-    providerId: string;
-    nonce: number;
-  } | null>(null);
   const [mcpManagementBusy, setMcpManagementBusy] = useState(false);
   const [skillsNavigationBusy, setSkillsNavigationBusy] = useState(false);
   const [promptNavigationBusy, setPromptNavigationBusy] = useState(false);
@@ -247,19 +220,6 @@ function App() {
     void checkToolUpdatesInBackground();
   }, [checkToolUpdatesOnStartup]);
 
-  // 启动时没能接上路由 / 聚合、已退回直连的应用：在对应的应用页提示一次并给「重试」
-  const [startupFailures, setStartupFailures] = useState<
-    StartupAttachFailure[]
-  >([]);
-  useEffect(() => {
-    proxyApi
-      .takeStartupAttachFailures()
-      .then((failures) => {
-        if (failures?.length) setStartupFailures(failures);
-      })
-      .catch(() => undefined);
-  }, []);
-
   // 应用专属页（工作区、记忆…）只属于它的应用；换了应用就回到供应商页
   useEffect(() => {
     if (isAppPage(currentView) && !appPageBelongsTo(currentView, activeApp)) {
@@ -300,23 +260,11 @@ function App() {
     }
   }, [activeApp, currentView]);
 
-  const { isRunning: isProxyRunning, takeoverStatus } = useProxyStatus();
-  const modeAppId = isModeAppId(activeApp) ? activeApp : null;
-  // 换了应用、新面板还没报上来时为 undefined：表单按应用实际生效的模式
-  const currentModeView =
-    providerModeView?.app === activeApp ? providerModeView.view : undefined;
-  const openAddProvider = (modeView: AppMode | undefined) => {
-    setFormModeView(modeView);
+  const openAddProvider = () => {
     setIsAddOpen(true);
   };
-  const currentAppUsesProxy = modeAppId !== null;
-  const isCurrentAppTakeoverActive = modeAppId
-    ? takeoverStatus?.[modeAppId] || false
-    : false;
 
-  const { data, isLoading, refetch } = useProvidersQuery(activeApp, {
-    isProxyRunning: currentAppUsesProxy && isProxyRunning,
-  });
+  const { data, isLoading, refetch } = useProvidersQuery(activeApp);
   const { data: piCurrentState } = usePiCurrentState(activeApp === "pi");
   const providers = useMemo(() => data?.providers ?? {}, [data]);
   const currentProviderId = data?.currentProviderId ?? "";
@@ -330,10 +278,7 @@ function App() {
     deleteProvider,
     saveUsageScript,
     setAsDefaultModel,
-  } = useProviderActions(
-    activeApp,
-    isProxyRunning && isCurrentAppTakeoverActive,
-  );
+  } = useProviderActions(activeApp);
   const handleEnablePiProvider = async (provider: Provider) => {
     try {
       await providersApi.switch(provider.id, "pi");
@@ -441,16 +386,11 @@ function App() {
     }
   });
 
-  // 应用项目后刷新相关缓存（providers 由既有 provider-switched 监听承接；
-  // proxy 状态由后端直接改 DB，不走 mutation，必须显式刷新）
+  // 应用项目后刷新相关缓存（providers 由既有 provider-switched 监听承接）
   useTauriEvent("profile-applied", async () => {
     await queryClient.invalidateQueries({ queryKey: ["profiles"] });
     await queryClient.invalidateQueries({ queryKey: ["mcp", "all"] });
     await queryClient.invalidateQueries({ queryKey: ["skills"] });
-    await queryClient.invalidateQueries({
-      queryKey: proxyKeys.takeoverStatus,
-    });
-    await queryClient.invalidateQueries({ queryKey: proxyKeys.status });
     await queryClient.invalidateQueries({
       queryKey: ["providers", "claude-desktop"],
     });
@@ -484,19 +424,6 @@ function App() {
         t("settings.s3Sync.autoSyncFailedToast", {
           error: statusPayload.error || t("common.unknown"),
         }),
-      );
-    },
-  );
-
-  useTauriEvent<{ appType: string; providerName: string }>(
-    "proxy-official-warning",
-    (payload) => {
-      toast.warning(
-        t("notifications.proxyOfficialWarning", {
-          name: payload.providerName,
-          defaultValue: `当前供应商 ${payload.providerName} 是官方供应商，建议切换到第三方供应商后再使用代理接管`,
-        }),
-        { duration: 8000 },
       );
     },
   );
@@ -703,15 +630,7 @@ function App() {
       }
       if (!navigation.app) return;
       selectApp(navigation.app);
-      // 托盘先换应用：新应用那格还没报上来，按它实际生效的模式
-      if (navigation.intent === "add") openAddProvider(undefined);
-      if (navigation.intent === "needsRoute" && navigation.providerId) {
-        setTrayNeedsRoute({
-          app: navigation.app,
-          providerId: navigation.providerId,
-          nonce: Date.now(),
-        });
-      }
+      if (navigation.intent === "add") openAddProvider();
     };
     if (managementBusyRef.current || !confirmLeave(navigate)) navigate();
   });
@@ -1153,7 +1072,7 @@ function App() {
           <Button
             variant="soft"
             size="compact"
-            onClick={() => openAddProvider(currentModeView)}
+            onClick={() => openAddProvider()}
           >
             <Plus className="h-4 w-4" />
             {t("common.add")}
@@ -1259,7 +1178,6 @@ function App() {
 
   const listCallbacks = {
     onEdit: (provider: Provider) => {
-      setFormModeView(currentModeView);
       setEditingProvider(provider);
     },
     onDelete: (provider: Provider) =>
@@ -1268,43 +1186,12 @@ function App() {
     onConfigureUsage: setUsageProvider,
     onOpenWebsite: handleOpenWebsite,
     onOpenTerminal: activeApp === "claude" ? setTerminalProvider : undefined,
-    onCreate: () => openAddProvider(currentModeView),
+    onCreate: () => openAddProvider(),
     searchOpen: providerSearchOpen,
     onSearchOpenChange: setProviderSearchOpen,
   };
 
   const renderProviderList = () => {
-    if (modeAppId) {
-      const startupFailure = startupFailures.find(
-        (failure) => failure.appType === modeAppId,
-      );
-      return (
-        <SwitchModePanel
-          key={modeAppId}
-          app={modeAppId}
-          providers={providers}
-          currentProviderId={currentProviderId}
-          isLoading={isLoading}
-          scrollRef={providerScrollContainerRef}
-          onSwitch={switchProvider}
-          onOpenRoutingSettings={() => openSettings("routing")}
-          needsRouteRequest={
-            trayNeedsRoute?.app === modeAppId ? trayNeedsRoute : undefined
-          }
-          onNeedsRouteHandled={() => setTrayNeedsRoute(null)}
-          onViewChange={handleProviderModeViewChange}
-          searchSlot={providerSearchSlot}
-          startupFailure={startupFailure}
-          onDismissStartupFailure={() =>
-            setStartupFailures((list) =>
-              list.filter((failure) => failure.appType !== modeAppId),
-            )
-          }
-          {...listCallbacks}
-        />
-      );
-    }
-
     return (
       <div
         ref={providerScrollContainerRef}
@@ -1425,40 +1312,7 @@ function App() {
     switch (currentView) {
       case "usage":
         return (
-          <UsagePage
-            initialAppType={usageAppFilter}
-            onOpenRoutingSettings={() => openSettings("routing")}
-          />
-        );
-      case "auth":
-        return (
-          <>
-            <AppPageHeader
-              icon={<KeyRound className="h-5 w-5" strokeWidth={1.5} />}
-              title={t("nav.auth")}
-              titleExtra={
-                <>
-                  <HelpTip title={t("authCenter.helpTitle")}>
-                    {t("settings.authCenter.description")}
-                  </HelpTip>
-                  <Badge
-                    variant="outline"
-                    className="ms-1 h-5 px-1.5 text-badge font-medium"
-                  >
-                    {t("settings.authCenter.beta", { defaultValue: "Beta" })}
-                  </Badge>
-                </>
-              }
-            />
-            <div
-              id="main-content"
-              className="min-h-0 flex-1 overflow-y-auto scroll-stable"
-            >
-              <div className="px-6 pb-10 pt-4">
-                <AuthCenterPanel showIntro={false} />
-              </div>
-            </div>
-          </>
+          <UsagePage initialAppType={usageAppFilter} />
         );
       case "mcp":
         return (
@@ -1595,7 +1449,6 @@ function App() {
         onOpenChange={setIsAddOpen}
         appId={activeApp}
         onSubmit={addProvider}
-        modeView={formModeView}
       />
 
       <EditProviderDialog
@@ -1608,9 +1461,7 @@ function App() {
         }}
         onSubmit={handleEditProvider}
         appId={activeApp}
-        isProxyTakeover={isCurrentAppTakeoverActive}
         isCurrent={effectiveEditingProvider?.id === currentProviderId}
-        modeView={formModeView}
       />
 
       {effectiveUsageProvider && (

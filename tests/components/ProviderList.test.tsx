@@ -162,27 +162,9 @@ describe("ProviderList Component", () => {
     overrides: Partial<SwitchModeProps> = {},
   ): SwitchModeProps {
     return {
-      active: "direct",
-      view: "direct",
-      directId: null,
-      routeId: null,
-      failoverOn: false,
-      queue: [],
-      stackMembers: new Map(),
-      routingReason: () => "",
-      serviceRunning: false,
-      actions: {
-        switchDirect: vi.fn(),
-        needsRouteDialog: vi.fn(),
-        exitAndUse: vi.fn(),
-        routeTo: vi.fn(),
-        queueAdd: vi.fn(),
-        queueRemove: vi.fn(),
-        queueMove: vi.fn(),
-        stackAdd: vi.fn(),
-        stackRemove: vi.fn(),
-        stackSetDefault: vi.fn(),
-      },
+      currentId: null,
+      unsupportedReason: () => "",
+      actions: { switchTo: vi.fn() },
       ...overrides,
     };
   }
@@ -232,7 +214,7 @@ describe("ProviderList Component", () => {
     const handleEdit = vi.fn();
     const handleDelete = vi.fn();
     const handleDuplicate = vi.fn();
-    const mode = switchMode({ directId: "b" });
+    const mode = switchMode({ currentId: "b" });
 
     useDragSortMock.mockReturnValue({
       sortedProviders: [providerB, providerA],
@@ -265,7 +247,7 @@ describe("ProviderList Component", () => {
       "providerCard.status.inUse",
     );
     fireEvent.click(screen.getByTestId("switch-a"));
-    expect(mode.actions.switchDirect).toHaveBeenCalledWith(providerA);
+    expect(mode.actions.switchTo).toHaveBeenCalledWith(providerA);
 
     fireEvent.click(screen.getByTestId("edit-b"));
     fireEvent.click(screen.getByTestId("duplicate-b"));
@@ -279,36 +261,6 @@ describe("ProviderList Component", () => {
     );
   });
 
-  it("shows queue sections while failover is on", () => {
-    const providerA = createProvider({ id: "a", name: "A" });
-    const providerB = createProvider({ id: "b", name: "B" });
-    useDragSortMock.mockReturnValue({
-      sortedProviders: [providerA, providerB],
-      sensors: [],
-      handleDragEnd: vi.fn(),
-    });
-
-    renderWithQueryClient(
-      <ProviderList
-        {...baseProps}
-        providers={{ a: providerA, b: providerB }}
-        appId="claude"
-        switchMode={switchMode({
-          active: "route",
-          view: "route",
-          routeId: "b",
-          failoverOn: true,
-          queue: ["b"],
-        })}
-      />,
-    );
-
-    expect(
-      screen.getByRole("heading", { name: "providerCard.section.queue" }),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("queueRemove-b")).toBeInTheDocument();
-    expect(screen.getByTestId("queueAdd-a")).toBeInTheDocument();
-  });
 
   it("uses the additive layout for apps that keep several providers", async () => {
     const providerA = createProvider({ id: "a", name: "A" });

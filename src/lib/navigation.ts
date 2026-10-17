@@ -4,8 +4,8 @@ import type { AppId } from "@/lib/api";
  * 主窗口的导航模型（v7）：侧栏选一个应用或一个全局页；设置单独占一屏。
  *
  * - 应用页：点侧栏应用行进入供应商页；OpenClaw、Hermes 在页头下用分段控件切到自己的专属页。
- * - 全局页：用量统计、授权中心、MCP、Skills、提示词、会话、应用（安装与显示），每样只出现一次。
- * - 设置：侧栏换成设置目录，6 个分组。
+ * - 全局页：用量统计、MCP、Skills、提示词、会话、应用（安装与显示），每样只出现一次。
+ * - 设置：侧栏换成设置目录，5 个分组。
  */
 
 export type AppPage =
@@ -16,7 +16,6 @@ export type AppPage =
 
 export type GlobalPage =
   | "usage"
-  | "auth"
   | "mcp"
   | "skills"
   | "skillsDiscovery"
@@ -29,7 +28,6 @@ export type View = AppPage | GlobalPage | "settings";
 export type SettingsSection =
   | "general"
   | "appConfig"
-  | "routing"
   | "network"
   | "data"
   | "about";
@@ -37,7 +35,6 @@ export type SettingsSection =
 export const SETTINGS_SECTIONS: SettingsSection[] = [
   "general",
   "appConfig",
-  "routing",
   "network",
   "data",
   "about",
@@ -52,7 +49,6 @@ const APP_PAGES: AppPage[] = [
 
 const GLOBAL_PAGES: GlobalPage[] = [
   "usage",
-  "auth",
   "mcp",
   "skills",
   "skillsDiscovery",
@@ -118,15 +114,12 @@ export function storeView(view: View) {
 }
 
 /**
- * 旧的设置页签名 → 新的设置分组。用量统计、认证已经搬成全局页，由调用方改走全局页。
+ * 旧的设置页签名 → 新的设置分组。用量统计已经搬成全局页，由调用方改走全局页。
  */
 export function normalizeSettingsSection(
   tab: string | null | undefined,
 ): SettingsSection {
   switch (tab) {
-    case "proxy":
-    case "routing":
-      return "routing";
     case "advanced":
     case "data":
       return "data";

@@ -33,7 +33,6 @@ import {
   FullUrlToggle,
   ModelDropdown,
   ModelInputWithFetch,
-  type DirectModeFormatNotice,
 } from "./shared";
 import { CopilotAuthSection } from "./CopilotAuthSection";
 import { CodexOAuthSection } from "./CodexOAuthSection";
@@ -52,17 +51,12 @@ import {
   type FetchedModel,
 } from "@/lib/api/model-fetch";
 import { CustomUserAgentField } from "./CustomUserAgentField";
-import {
-  ClaudeStackModelsField,
-  type ClaudeStackModelRow,
-} from "./ClaudeStackModelsField";
 import { LocalProxyRequestOverridesField } from "./LocalProxyRequestOverridesField";
 import type {
   ProviderCategory,
   ClaudeApiFormat,
   ClaudeApiKeyField,
 } from "@/types";
-import type { ManagedAuthProvider } from "@/lib/api";
 import {
   hasClaudeOneMMarker,
   setClaudeOneMMarker,
@@ -99,7 +93,6 @@ interface ClaudeFormFieldsProps {
   /** GitHub 账号选择回调（多账号支持） */
   onGitHubAccountSelect?: (accountId: string | null) => void;
   /** 打开托管账号管理入口 */
-  onManageAuthAccounts?: (target: ManagedAuthProvider) => void;
 
   // Codex OAuth (ChatGPT Plus/Pro)
   isCodexOauthPreset?: boolean;
@@ -169,16 +162,6 @@ interface ClaudeFormFieldsProps {
   localProxyBodyOverride: string;
   onLocalProxyBodyOverrideChange: (value: string) => void;
 
-  /**
-   * 布局：`classic` 是直连 / 路由用的完整表单；`stack` 是 Stack 模式的简化面板（连接 +
-   * 模型列表 + 高级），不显示模型映射。
-   */
-  variant?: "classic" | "stack";
-  /** 应用实际在直连时传：选了要靠路由转换的格式就在格式下面提示后果。 */
-  directModeFormatNotice?: DirectModeFormatNotice;
-  /** Stack 布局的模型列表（第一行是这家的默认模型）。 */
-  stackModelRows?: ClaudeStackModelRow[];
-  onStackModelRowsChange?: (rows: ClaudeStackModelRow[]) => void;
 }
 
 export function ClaudeFormFields({
@@ -196,7 +179,6 @@ export function ClaudeFormFields({
   isCopilotAuthenticated,
   selectedGitHubAccountId,
   onGitHubAccountSelect,
-  onManageAuthAccounts,
   isCodexOauthPreset,
   isCodexOauthAuthenticated,
   selectedCodexAccountId,
@@ -245,10 +227,6 @@ export function ClaudeFormFields({
   onLocalProxyHeadersOverrideChange,
   localProxyBodyOverride,
   onLocalProxyBodyOverrideChange,
-  variant = "classic",
-  directModeFormatNotice,
-  stackModelRows = [],
-  onStackModelRowsChange,
 }: ClaudeFormFieldsProps) {
   const { t } = useTranslation();
   const hasRequestOverrides = Boolean(
@@ -280,11 +258,6 @@ export function ClaudeFormFields({
     }
   }, [hasAnyAdvancedValue, isXaiOauthPreset]);
 
-  // Stack 布局的高级区只有完整 URL、User-Agent 和请求覆盖，开了或填了才展开。
-  const [stackAdvancedExpanded, setStackAdvancedExpanded] = useState(
-    isFullUrl || !!customUserAgent || hasRequestOverrides,
-  );
-
   // Copilot 可用模型列表
   const [copilotModels, setCopilotModels] = useState<CopilotModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -305,16 +278,15 @@ export function ClaudeFormFields({
   const [isFetchingModels, setIsFetchingModels] = useState(false);
 
   // 聚合布局的模型列表拉取成功后直接打开选择弹窗，不再提示成功。
-  const opensModelPicker = variant === "stack" && !!onStackModelRowsChange;
   const showModelFetchResult = useCallback(
     (count: number) => {
       if (count === 0) {
         toast.info(t("providerForm.fetchModelsEmpty"));
-      } else if (!opensModelPicker) {
+      } else {
         toast.success(t("providerForm.fetchModelsSuccess", { count }));
       }
     },
-    [opensModelPicker, t],
+    [t],
   );
 
   const handleFetchModels = useCallback(() => {
@@ -693,11 +665,6 @@ export function ClaudeFormFields({
           mode="select"
           selectedAccountId={selectedGitHubAccountId}
           onAccountSelect={onGitHubAccountSelect}
-          onManageAccounts={
-            onManageAuthAccounts
-              ? () => onManageAuthAccounts("github_copilot")
-              : undefined
-          }
         />
       )}
 
@@ -707,11 +674,6 @@ export function ClaudeFormFields({
           mode="select"
           selectedAccountId={selectedCodexAccountId}
           onAccountSelect={onCodexAccountSelect}
-          onManageAccounts={
-            onManageAuthAccounts
-              ? () => onManageAuthAccounts("codex_oauth")
-              : undefined
-          }
           fastModeEnabled={codexFastMode}
           onFastModeChange={onCodexFastModeChange}
         />
@@ -881,9 +843,7 @@ export function ClaudeFormFields({
                 </SelectItem>
               </SelectContent>
             </Select>
-            {directModeFormatNotice && apiFormat !== "anthropic" && (
-              <DirectModeFormatWarning notice={directModeFormatNotice} />
-            )}
+            {apiFormat !== "anthropic" && <DirectModeFormatWarning />}
           </div>
         )}
     </>
@@ -935,7 +895,7 @@ export function ClaudeFormFields({
     category !== "official" && category !== "cloud_provider";
   const fallbackModelMissing =
     usesThirdPartyEndpoint &&
-    !(directModeFormatNotice ? defaultHaikuModel : claudeModel).trim();
+    !claudeModel.trim();
 
   // 完整 URL 跟着地址框：托管账号卡的地址由后端固定，没有这个开关。
   const fullUrlToggle = shouldShowSpeedTest &&
@@ -978,80 +938,6 @@ export function ClaudeFormFields({
       </div>
     </>
   );
-
-  if (variant === "stack") {
-    // 批量勾选模型用当前预设对应的那份上游列表。
-    const stackFetchedModels: FetchedModel[] = isCopilotPreset
-      ? copilotModels.map((m) => ({ id: m.id, ownedBy: m.vendor || null }))
-      : isCodexOauthPreset
-        ? codexOauthModels
-        : isXaiOauthPreset
-          ? xaiOauthModels
-          : fetchedModels;
-    // 认证字段只对 Anthropic 格式、自己填 Key 的供应商有意义，放在 Key 旁边。
-    const showAuthField =
-      shouldShowApiKey &&
-      !usesOAuth &&
-      !isCodexOauthPreset &&
-      !isXaiOauthPreset &&
-      apiFormat === "anthropic";
-
-    return (
-      <>
-        {oauthSections}
-        {apiFormatField}
-        {apiKeySection}
-        {showAuthField && authFieldSelect}
-        {templateSection}
-        {endpointSection}
-        {speedTestModal}
-
-        {onStackModelRowsChange && (
-          <ClaudeStackModelsField
-            rows={stackModelRows}
-            onRowsChange={onStackModelRowsChange}
-            fetchedModels={stackFetchedModels}
-            onFetchModels={handleModelFetchClick}
-            isFetchingModels={modelFetchLoading}
-            baseUrl={baseUrl}
-          />
-        )}
-
-        {/* 高级区只有 UA 和请求覆盖；Copilot 的转发会跳过这两项，整块不显示 */}
-        {!isCopilotPreset && (
-          <Collapsible
-            open={stackAdvancedExpanded}
-            onOpenChange={setStackAdvancedExpanded}
-            className="rounded-lg border border-border p-4"
-          >
-            <CollapsibleTrigger asChild>
-              <Button
-                type="button"
-                variant={null}
-                size="sm"
-                className="h-8 w-full justify-start gap-1.5 px-0 text-sm font-medium text-fg-1 hover:opacity-70"
-              >
-                {stackAdvancedExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-                {t("providerForm.advancedOptionsToggle")}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-2">
-              {fullUrlToggle && (
-                <div className="border-b border-border pb-3">
-                  {fullUrlToggle}
-                </div>
-              )}
-              {userAgentAndOverrides}
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-      </>
-    );
-  }
 
   return (
     <>
@@ -1261,17 +1147,12 @@ export function ClaudeFormFields({
                 <FormLabel htmlFor="claudeModel">
                   {fallbackModelLabel}
                 </FormLabel>
-                {/* 直连时它是 Claude Code 的主模型；经过路由时才是各档留空、没匹配到档位的回落。 */}
+                {/* 它是 Claude Code 启动时用的主模型，也是各档都留空时的回落。 */}
                 <HelpTip title={fallbackModelLabel}>
-                  {directModeFormatNotice
-                    ? t("providerForm.fallbackModelHelpDirect", {
-                        defaultValue:
-                          "写进 ANTHROPIC_MODEL，是 Claude Code 启动时用的主模型。后台任务另用 Haiku 那一档。",
-                      })
-                    : t("providerForm.fallbackModelHelp", {
-                        defaultValue:
-                          "没落到 Sonnet、Opus、Fable、Haiku 任一档的请求，改用这个模型发给上游。",
-                      })}
+                  {t("providerForm.fallbackModelHelpDirect", {
+                    defaultValue:
+                      "写进 ANTHROPIC_MODEL，是 Claude Code 启动时用的主模型。后台任务另用 Haiku 那一档。",
+                  })}
                 </HelpTip>
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_minmax(0,104px)]">
@@ -1305,15 +1186,10 @@ export function ClaudeFormFields({
               </div>
               {fallbackModelMissing && (
                 <p className="text-xs leading-relaxed text-warning-text">
-                  {directModeFormatNotice
-                    ? t("providerForm.fallbackModelHaikuMissing", {
-                        defaultValue:
-                          "Haiku 一档没填：后台任务会用原始 Claude 模型名请求上游，第三方端点可能报错。",
-                      })
-                    : t("providerForm.fallbackModelMissing", {
-                        defaultValue:
-                          "没填：没落到任何一档的请求会用原始 Claude 模型名发给上游，可能报错。",
-                      })}
+                  {t("providerForm.fallbackModelHaikuMissing", {
+                    defaultValue:
+                      "Haiku 一档没填：后台任务会用原始 Claude 模型名请求上游，第三方端点可能报错。",
+                  })}
                 </p>
               )}
             </div>

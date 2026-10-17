@@ -164,8 +164,6 @@ interface UsageDashboardProps {
   ) => Promise<boolean> | boolean | void;
   /** 从应用页「查看此应用的用量」进入时带上的应用筛选 */
   initialAppType?: AppTypeFilter;
-  /** 「数据来源」里的「修改记录请求用量」：打开设置 → 本地路由 */
-  onOpenRoutingSettings?: () => void;
   /** 金额显示币种与汇率（设备级设置） */
   usageDisplay?: UsageDisplaySettings;
   onUsageDisplayChange?: (
@@ -183,7 +181,6 @@ export function UsageDashboard({
   settingsReady = true,
   onSessionAutoSyncEnabledChange,
   initialAppType = "all",
-  onOpenRoutingSettings,
   usageDisplay,
   onUsageDisplayChange,
 }: UsageDashboardProps = {}) {
@@ -915,7 +912,6 @@ export function UsageDashboard({
         syncedLabel={drawerSyncedLabel}
         syncing={syncingSession}
         onSyncNow={() => void runManualSessionSync()}
-        onOpenRoutingSettings={onOpenRoutingSettings}
         rebuildingCodex={rebuildingCodex}
         onRebuildCodex={() => setShowRebuildConfirm(true)}
       />

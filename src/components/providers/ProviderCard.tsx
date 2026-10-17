@@ -29,10 +29,9 @@ import {
 } from "@/utils/providerConfigUtils";
 import { resolveManagedAccountId } from "@/lib/authBinding";
 import { resolveCodexOfficialIdentity } from "@/utils/providerCapabilities";
-import { useProviderHealth } from "@/lib/query/failover";
 import { useUsageQuery } from "@/lib/query/queries";
 import { resolveProviderIcon } from "@/utils/providerIcon";
-import { isAdditiveAppId, isProxyAppId } from "@/config/appConfig";
+import { isAdditiveAppId } from "@/config/appConfig";
 import { ProviderCardActions } from "./ProviderCardActions";
 import type { CardChip, CardPresentation, CardTone } from "./presentation";
 
@@ -64,16 +63,12 @@ interface ProviderCardProps {
 /** 当前那张：模式色淡底 + 极轻边框；共存式「已添加」是中性的。 */
 const TONE_CLASS: Record<CardTone, string> = {
   direct: "border-direct-border bg-direct-soft",
-  route: "border-route-border bg-route-soft",
-  stack: "border-stack-border bg-stack-soft",
   neutral: "border-border bg-subtle",
 };
 
 const CHIP_CLASS: Record<CardChip["tone"], string> = {
   outline: "border border-border-strong text-fg-2",
   direct: "bg-direct-soft text-direct-text",
-  route: "bg-route-soft text-route-text",
-  stack: "bg-stack-soft text-stack-text",
   success: "bg-success-soft text-success-text",
   warning: "bg-warning-soft text-warning-text",
   danger: "bg-danger-soft text-danger-text",
@@ -92,23 +87,6 @@ export function CardChipBadge({ chip }: { chip: CardChip }) {
       {chip.label}
     </span>
   );
-}
-
-function HealthChip({
-  consecutiveFailures,
-  isHealthy,
-}: {
-  consecutiveFailures: number;
-  isHealthy?: boolean;
-}) {
-  const { t } = useTranslation();
-  const chip: CardChip =
-    consecutiveFailures === 0
-      ? { key: "health", label: t("health.operational"), tone: "success" }
-      : isHealthy !== false
-        ? { key: "health", label: t("health.degraded"), tone: "warning" }
-        : { key: "health", label: t("health.circuitOpen"), tone: "danger" };
-  return <CardChipBadge chip={chip} />;
 }
 
 /** 判断是否为官方供应商（无自定义 base URL / API key，直连官方 API） */
@@ -203,11 +181,6 @@ export function ProviderCard({
           `OpenAI Official (${managedCodexAccount.login})`),
   );
 
-  const { data: health } = useProviderHealth(
-    provider.id,
-    appId,
-    Boolean(presentation.showHealth) && isProxyAppId(appId),
-  );
 
   const fallbackUrlText = t("provider.notConfigured", {
     defaultValue: "未配置接口地址",
@@ -346,12 +319,6 @@ export function ProviderCard({
             {presentation.chips.map((chip) => (
               <CardChipBadge key={chip.key} chip={chip} />
             ))}
-            {presentation.showHealth && health && (
-              <HealthChip
-                consecutiveFailures={health.consecutive_failures}
-                isHealthy={health.is_healthy}
-              />
-            )}
           </div>
 
           {codexOfficialIdentity && codexOfficialIdentity !== "api_key" ? (

@@ -293,6 +293,7 @@
     }
   },
   "notifications": {
+    "formatUnsupportedForSwitch": "{{name}} 的协议格式 Agent 客户端直连用不了，请先把它改成客户端支持的格式",
     "providerAdded": "供应商已添加",
     "providerSaved": "供应商配置已保存",
     "providerDeleted": "供应商删除成功",
@@ -1551,6 +1552,7 @@
     "openReleaseNotesFailed": "打开更新日志失败:"
   },
   "providerForm": {
+    "formatUnsupportedWarning": "Agent 客户端只认自己的协议格式，选这种格式直连发不出请求。保存后这家用不了，请改用客户端支持的格式。",
     "supplierName": "供应商名称",
     "supplierNameRequired": "供应商名称 *",
     "supplierNamePlaceholder": "例如：Anthropic 官方",
@@ -4313,6 +4315,7 @@
     },
     "chip": {
       "official": "官方",
+      "formatUnsupported": "格式不支持",
       "needsRoute": "需要路由",
       "directWhenDirect": "直连时使用",
       "default": "默认",
@@ -4323,6 +4326,7 @@
       "defaultModel": "默认模型 {{model}}"
     },
     "reason": {
+      "formatUnsupported": "这种格式 Agent 客户端直连发不出去，需要先在表单里改成客户端支持的格式。",
       "noRoute": "官方订阅不经过路由，回到直连后可用。",
       "noStack": "官方订阅不能用于聚合模式。",
       "officialStack": "官方账号只能做默认，不能加入聚合。",

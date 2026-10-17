@@ -98,47 +98,16 @@ export function isOfficialAccount(
   );
 }
 
-/**
- * 能进故障转移队列（对应后端 `provider_router::provider_supports_failover`）：
- * Codex 官方账号卡靠客户端自己的登录走路由，不能和别家轮换。
- */
-export function supportsFailover(
-  appId: AppId,
-  provider: Pick<Provider, "id" | "category" | "meta" | "settingsConfig">,
-): boolean {
-  return !supportsOfficialProxyTakeover(appId, provider);
-}
-
-/** Keep the UI capability rule aligned with the Rust takeover policy. */
-export function supportsOfficialProxyTakeover(
-  appId: AppId,
-  provider: Pick<Provider, "id" | "category" | "meta" | "settingsConfig">,
-): boolean {
-  const identity = resolveCodexOfficialIdentity(appId, provider);
-  if (!identity || identity === "api_key") return false;
-  if (
-    provider.id === CODEX_OFFICIAL_PROVIDER_ID ||
-    identity === "managed_account"
-  ) {
-    return true;
-  }
-  return true;
-}
 
 /**
- * 供应商在指定应用下是否必须开启路由接管才能正常工作（badge 与切换警告共用的权威谓词）。
+ * 这家供应商的格式，Agent 客户端直连能不能用。
  *
- * 权威信号是 `providerType`：托管 OAuth 供应商的凭据由本地代理按请求注入
- * （见 `forwarder.rs`，注入发生在转发路径上，请求必须经过代理 = 接管当前应用），
- * 且后端按 providerType 强制托管认证/格式而**无视 apiFormat**。因此 apiFormat
- * 只是可能被用户改动或旧数据缺省的次要信号，OAuth 供应商一律以 providerType 判定。
- *
- * - Claude Desktop 的普通供应商按 direct/proxy 模式判定；托管 OAuth 没有
- *   direct 逃生口（后端同样拒绝），始终需要本地路由。
- * - claude / codex / grokbuild 的托管 OAuth 同样恒需路由；非 OAuth 则按
- *   各自原生格式及完整 URL 模式判断是否需要本地处理。
+ * 客户端只认自己的协议：Claude Code 只吃 Anthropic Messages，Codex 只吃 Responses，
+ * Grok Build 同 Codex。需要换协议、需要逐请求注入令牌（Copilot / xAI OAuth）、
+ * 需要模型映射（Claude Desktop 的 proxy 模式）的供应商，没有本地路由就用不了——
+ * 界面照常列出来，但切换按钮置灰并说明原因。
  */
-export function providerNeedsRouting(
+export function providerFormatUnsupported(
   appId: AppId,
   provider: Provider,
 ): boolean {

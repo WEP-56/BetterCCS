@@ -423,7 +423,6 @@ describe("EditProviderDialog", () => {
         onOpenChange={vi.fn()}
         onSubmit={vi.fn()}
         appId="codex"
-        isProxyTakeover
       />,
     );
 

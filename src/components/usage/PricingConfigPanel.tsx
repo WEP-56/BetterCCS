@@ -25,7 +25,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { AppGlyph, APP_DISPLAY_NAME } from "@/components/shell/AppGlyph";
 import { useModelPricing, useDeleteModelPricing } from "@/lib/query/usage";
 import { TablePagination, useClientPagination } from "./TablePagination";
-import { proxyApi } from "@/lib/api/proxy";
+import { usageApi } from "@/lib/api/usage";
 import type { ModelPricing } from "@/types/usage";
 import { cn } from "@/lib/utils";
 import { PricingEditModal } from "./PricingEditModal";
@@ -81,7 +81,7 @@ function useBillingSources() {
       try {
         const results = await Promise.all(
           PRICING_APPS.map(async (app) => {
-            const source = await proxyApi.getPricingModelSource(app);
+            const source = await usageApi.getPricingModelSource(app);
             return {
               app,
               source: (source === "request"
@@ -139,7 +139,7 @@ function BillingDefaultsDialog({
     try {
       await Promise.all(
         PRICING_APPS.map((app) =>
-          proxyApi.setPricingModelSource(app, draft[app]),
+          usageApi.setPricingModelSource(app, draft[app]),
         ),
       );
       toast.success(t("settings.globalProxy.pricingSaved"));

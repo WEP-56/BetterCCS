@@ -3,7 +3,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CodexOAuthSection } from "@/components/providers/forms/CodexOAuthSection";
-import { AuthCenterPanel } from "@/components/settings/AuthCenterPanel";
 
 const mocks = vi.hoisted(() => ({
   useCodexOauth: vi.fn(),
@@ -114,8 +113,8 @@ describe("CodexOAuthSection", () => {
     expect(screen.queryByTestId("account-quota")).not.toBeInTheDocument();
   });
 
-  it("renders account quota in Auth Center", () => {
-    render(<AuthCenterPanel />);
+  it("renders account quota when asked to", () => {
+    render(<CodexOAuthSection showAccountQuota />);
 
     expect(mocks.renderAccountQuota).toHaveBeenCalledWith("account-1");
     expect(mocks.renderAccountQuota).toHaveBeenCalledWith("account-2");
