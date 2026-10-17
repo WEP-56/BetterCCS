@@ -51,7 +51,7 @@
 | 文件 | 内容 |
 |------|------|
 | [1.1-introduction.md](./1-getting-started/1.1-introduction.md) | 软件介绍、核心功能、支持平台 |
-| [1.2-installation.md](./1-getting-started/1.2-installation.md) | Windows/macOS/Linux 安装指南 |
+| [1.2-installation.md](./1-getting-started/1.2-installation.md) | Windows / macOS 安装指南 |
 | [1.3-interface.md](./1-getting-started/1.3-interface.md) | 侧栏布局、连接模式标签、供应商卡片说明 |
 | [1.4-quickstart.md](./1-getting-started/1.4-quickstart.md) | 5 分钟快速上手教程 |
 | [1.5-settings.md](./1-getting-started/1.5-settings.md) | 设置六个分组：通用、应用配置、本地路由、网络、数据、关于 |
@@ -120,11 +120,8 @@
 - **切换只改关键字段**：地址、密钥、模型等关键字段以外的设置原样保留，不再使用通用配置片段 — 详见 [2.3 编辑供应商](./2-providers/2.3-edit.md)
 - **授权中心**：ChatGPT、GitHub Copilot、xAI 等账号集中在侧栏「授权中心」管理 — 详见 [1.5 个性化配置](./1-getting-started/1.5-settings.md)
 - **「应用」页**：安装、升级各 CLI 工具，选择侧栏显示哪些应用 — 详见 [1.2 安装指南](./1-getting-started/1.2-installation.md)
-- 完整变化见 [v4.0 发布说明](../../release-notes/v4.0.4-zh.md)
+- 完整变化见应用内「更新摘要」弹窗
 
-## 贡献
+## 反馈
 
-欢迎提交 Issue 或 PR 改进文档：
-
-- [GitHub Issues](https://github.com/farion1231/cc-switch/issues)
-- [GitHub Repository](https://github.com/farion1231/cc-switch)
+文档有错漏，直接提 Issue 即可。

@@ -8,7 +8,7 @@ Kimi 开放平台和 Kimi For Coding 的官方 Codex 预设已切换为 **Respon
 2. 填入对应 API Key，保存并启用。旧卡片建议重新添加预设；若手动迁移，确认端点正确后将「上游格式」改为 **Responses**。
 3. 重启 Codex，使配置和模型目录生效。原生 Responses 也可经标准代理转发，但不再需要 Responses→Chat 转换。
 
-详见 [v3.20.3 更新说明](../release-notes/v3.20.3-zh.md)与[添加供应商](../user-manual/zh/2-providers/2.1-add.md)。**下文保留的是旧版 Chat 格式教程与截图，仅供已有 Chat 卡片排障参考，不代表新版预设的配置。**
+详见[添加供应商](../user-manual/zh/2-providers/2.1-add.md)。**下文保留的是旧版 Chat 格式教程与截图，仅供已有 Chat 卡片排障参考，不代表新版预设的配置。**
 
 > 适用版本：CC Switch 3.16.5 及附近版本。本文根据仓库内文档与代码整理，并用 Kimi 作为 OpenAI Chat Completions 兼容接口的示例。截图来自当前前端界面，使用去敏示例数据生成，避免泄露真实 API Key 或账户余额。
 

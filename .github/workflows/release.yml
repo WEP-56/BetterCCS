@@ -81,9 +81,6 @@ jobs:
           - os: windows-2022
           - os: windows-11-arm
             arch: arm64
-          - os: ubuntu-22.04
-          - os: ubuntu-22.04-arm
-            arch: arm64
 
     steps:
       - name: Checkout
@@ -112,38 +109,6 @@ jobs:
         if: runner.os == 'Windows' && matrix.arch == 'arm64'
         shell: pwsh
         run: rustup target add aarch64-pc-windows-msvc
-
-      - name: Install Linux system deps
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          set -euxo pipefail
-          sudo apt-get update
-          # Core build tools and pkg-config
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            pkg-config \
-            curl \
-            wget \
-            file \
-            patchelf \
-            libssl-dev \
-            rpm \
-            flatpak \
-            flatpak-builder \
-            elfutils \
-            xdg-utils
-          # GTK/GLib stack for gdk-3.0, glib-2.0, gio-2.0
-          sudo apt-get install -y --no-install-recommends \
-            libgtk-3-dev \
-            librsvg2-dev \
-            libayatana-appindicator3-dev
-          # WebKit2GTK (version differs across Ubuntu images; try 4.1 then 4.0)
-          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev \
-            || sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.0-dev
-          # libsoup also changed major version; prefer 3.0 with fallback to 2.4
-          sudo apt-get install -y --no-install-recommends libsoup-3.0-dev \
-            || sudo apt-get install -y --no-install-recommends libsoup2.4-dev
 
       - name: Setup pnpm
         env:
@@ -204,10 +169,6 @@ jobs:
           } else {
             pnpm tauri build --bundles msi
           }
-
-      - name: Build Tauri App (Linux)
-        if: runner.os == 'Linux'
-        run: pnpm tauri build --bundles appimage,deb,rpm
 
       - name: Prepare Windows Assets
         if: runner.os == 'Windows'
@@ -281,58 +242,6 @@ jobs:
           } else {
             Write-Warning 'Portable exe not found'
           }
-
-      - name: Prepare Linux Assets
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          set -euxo pipefail
-          mkdir -p release-assets
-          # e.g., v3.5.0；手动干跑时是分支名，斜杠会被当成目录，换成 -
-          VERSION="${GITHUB_REF_NAME//\//-}"
-          ARCH="${{ matrix.arch || 'x86_64' }}"
-          # Updater artifact: AppImage（含对应 .sig）
-          APPIMAGE=$(find src-tauri/target/release/bundle -name "*.AppImage" | head -1 || true)
-          if [ -z "$APPIMAGE" ]; then
-            echo "❌ No AppImage found under target/release/bundle" >&2
-            exit 1
-          fi
-          if [ ! -f "$APPIMAGE.sig" ]; then
-            echo "❌ Updater signature not found: $APPIMAGE.sig" >&2
-            exit 1
-          fi
-          NEW_APPIMAGE="CC-Switch-${VERSION}-Linux-${ARCH}.AppImage"
-          cp "$APPIMAGE" "release-assets/$NEW_APPIMAGE"
-          cp "$APPIMAGE.sig" "release-assets/$NEW_APPIMAGE.sig"
-          echo "AppImage copied: $NEW_APPIMAGE"
-          # 额外上传 .deb（用于 Debian/Ubuntu 自动更新）
-          DEB=$(find src-tauri/target/release/bundle -name "*.deb" | head -1 || true)
-          if [ -z "$DEB" ]; then
-            echo "❌ No .deb found under target/release/bundle" >&2
-            exit 1
-          fi
-          if [ ! -f "$DEB.sig" ]; then
-            echo "❌ Updater signature not found: $DEB.sig" >&2
-            exit 1
-          fi
-          NEW_DEB="CC-Switch-${VERSION}-Linux-${ARCH}.deb"
-          cp "$DEB" "release-assets/$NEW_DEB"
-          cp "$DEB.sig" "release-assets/$NEW_DEB.sig"
-          echo "Deb package copied: $NEW_DEB"
-          # 额外上传 .rpm（用于 Fedora/RHEL/openSUSE 等自动更新）
-          RPM=$(find src-tauri/target/release/bundle -name "*.rpm" | head -1 || true)
-          if [ -z "$RPM" ]; then
-            echo "❌ No .rpm found under target/release/bundle" >&2
-            exit 1
-          fi
-          if [ ! -f "$RPM.sig" ]; then
-            echo "❌ Updater signature not found: $RPM.sig" >&2
-            exit 1
-          fi
-          NEW_RPM="CC-Switch-${VERSION}-Linux-${ARCH}.rpm"
-          cp "$RPM" "release-assets/$NEW_RPM"
-          cp "$RPM.sig" "release-assets/$NEW_RPM.sig"
-          echo "RPM package copied: $NEW_RPM"
 
       - name: List prepared assets
         shell: bash
@@ -825,12 +734,6 @@ jobs:
           mac_url=""; mac_sig=""
           win_x64_url=""; win_x64_sig=""
           win_arm64_url=""; win_arm64_sig=""
-          linux_x64_url=""; linux_x64_sig=""
-          linux_arm64_url=""; linux_arm64_sig=""
-          linux_x64_deb_url=""; linux_x64_deb_sig=""
-          linux_arm64_deb_url=""; linux_arm64_deb_sig=""
-          linux_x64_rpm_url=""; linux_x64_rpm_sig=""
-          linux_arm64_rpm_url=""; linux_arm64_rpm_sig=""
           shopt -s nullglob
           for sig in release-assets/*.sig; do
             base=${sig%.sig}
@@ -845,18 +748,6 @@ jobs:
                 win_arm64_url="$url"; win_arm64_sig="$sig_content";;
               *-Windows.msi)
                 win_x64_url="$url"; win_x64_sig="$sig_content";;
-              *-Linux-arm64.AppImage|*-Linux-arm64.appimage)
-                linux_arm64_url="$url"; linux_arm64_sig="$sig_content";;
-              *-Linux-x86_64.AppImage|*-Linux-x86_64.appimage)
-                linux_x64_url="$url"; linux_x64_sig="$sig_content";;
-              *-Linux-arm64.deb)
-                linux_arm64_deb_url="$url"; linux_arm64_deb_sig="$sig_content";;
-              *-Linux-x86_64.deb)
-                linux_x64_deb_url="$url"; linux_x64_deb_sig="$sig_content";;
-              *-Linux-arm64.rpm)
-                linux_arm64_rpm_url="$url"; linux_arm64_rpm_sig="$sig_content";;
-              *-Linux-x86_64.rpm)
-                linux_x64_rpm_url="$url"; linux_x64_rpm_sig="$sig_content";;
             esac
           done
           # 缺任一平台都不能发：缺的那批用户会静默收不到更新
@@ -864,12 +755,6 @@ jobs:
           [ -n "$mac_sig" ] || missing="$missing macOS"
           [ -n "$win_x64_sig" ] || missing="$missing windows-x86_64"
           [ -n "$win_arm64_sig" ] || missing="$missing windows-aarch64"
-          [ -n "$linux_x64_sig" ] || missing="$missing linux-x86_64"
-          [ -n "$linux_arm64_sig" ] || missing="$missing linux-aarch64"
-          [ -n "$linux_x64_deb_sig" ] || missing="$missing linux-x86_64-deb"
-          [ -n "$linux_arm64_deb_sig" ] || missing="$missing linux-aarch64-deb"
-          [ -n "$linux_x64_rpm_sig" ] || missing="$missing linux-x86_64-rpm"
-          [ -n "$linux_arm64_rpm_sig" ] || missing="$missing linux-aarch64-rpm"
           if [ -n "$missing" ]; then
             echo "❌ Missing updater signatures for:$missing" >&2
             exit 1
@@ -901,36 +786,6 @@ jobs:
               echo "    \"windows-aarch64\": {\"signature\": \"$win_arm64_sig\", \"url\": \"$win_arm64_url\"}"
               first=0
             fi
-            if [ -n "$linux_x64_url" ] && [ -n "$linux_x64_sig" ]; then
-              [ $first -eq 0 ] && echo ','
-              echo "    \"linux-x86_64\": {\"signature\": \"$linux_x64_sig\", \"url\": \"$linux_x64_url\"}"
-              first=0
-            fi
-            if [ -n "$linux_arm64_url" ] && [ -n "$linux_arm64_sig" ]; then
-              [ $first -eq 0 ] && echo ','
-              echo "    \"linux-aarch64\": {\"signature\": \"$linux_arm64_sig\", \"url\": \"$linux_arm64_url\"}"
-              first=0
-            fi
-            if [ -n "$linux_x64_deb_url" ] && [ -n "$linux_x64_deb_sig" ]; then
-              [ $first -eq 0 ] && echo ','
-              echo "    \"linux-x86_64-deb\": {\"signature\": \"$linux_x64_deb_sig\", \"url\": \"$linux_x64_deb_url\"}"
-              first=0
-            fi
-            if [ -n "$linux_arm64_deb_url" ] && [ -n "$linux_arm64_deb_sig" ]; then
-              [ $first -eq 0 ] && echo ','
-              echo "    \"linux-aarch64-deb\": {\"signature\": \"$linux_arm64_deb_sig\", \"url\": \"$linux_arm64_deb_url\"}"
-              first=0
-            fi
-            if [ -n "$linux_x64_rpm_url" ] && [ -n "$linux_x64_rpm_sig" ]; then
-              [ $first -eq 0 ] && echo ','
-              echo "    \"linux-x86_64-rpm\": {\"signature\": \"$linux_x64_rpm_sig\", \"url\": \"$linux_x64_rpm_url\"}"
-              first=0
-            fi
-            if [ -n "$linux_arm64_rpm_url" ] && [ -n "$linux_arm64_rpm_sig" ]; then
-              [ $first -eq 0 ] && echo ','
-              echo "    \"linux-aarch64-rpm\": {\"signature\": \"$linux_arm64_rpm_sig\", \"url\": \"$linux_arm64_rpm_url\"}"
-              first=0
-            fi
             echo '  }'
             echo '}'
           } > "$tmp_json"
@@ -945,8 +800,6 @@ jobs:
           body: |
             ## CC Switch ${{ github.ref_name }}
 
-            🌐 **Only Official Website / 唯一官方网站 / 唯一の公式サイト**: [ccswitch.io](https://ccswitch.io)
-
             Claude Code 供应商切换工具
 
             ### 下载
@@ -954,8 +807,6 @@ jobs:
             - **macOS**: `CC-Switch-${{ github.ref_name }}-macOS.dmg`（推荐）或 `CC-Switch-${{ github.ref_name }}-macOS.zip`（解压即用）
             - **Windows (x86_64)**: `CC-Switch-${{ github.ref_name }}-Windows.msi`（安装版）或 `CC-Switch-${{ github.ref_name }}-Windows-Portable.zip`（绿色版）
             - **Windows (ARM64)**: `CC-Switch-${{ github.ref_name }}-Windows-arm64.msi`（安装版）或 `CC-Switch-${{ github.ref_name }}-Windows-arm64-Portable.zip`（绿色版）
-            - **Linux (x86_64)**: `CC-Switch-${{ github.ref_name }}-Linux-x86_64.AppImage` / `.deb` / `.rpm`
-            - **Linux (ARM64)**: `CC-Switch-${{ github.ref_name }}-Linux-arm64.AppImage` / `.deb` / `.rpm`
 
             > `.tar.gz` 为 Tauri updater 自动更新专用，无需手动下载。
 
