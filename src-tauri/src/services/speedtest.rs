@@ -69,7 +69,7 @@ impl SpeedtestService {
 
         let tasks = valid_targets.into_iter().map(|(idx, trimmed, parsed_url)| {
             // 使用全局 HTTP 客户端（已包含代理配置）；本机地址直连
-            let client = crate::proxy::http_client::get_for_url(&trimmed);
+            let client = crate::upstream::http_client::get_for_url(&trimmed);
             async move {
                 // 先进行一次热身请求，忽略结果，仅用于复用连接/绕过首包惩罚。
                 let _ = client

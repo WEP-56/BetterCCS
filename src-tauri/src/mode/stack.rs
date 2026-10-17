@@ -25,7 +25,7 @@ use crate::error::AppError;
 use crate::live::engine::DeviceStore;
 use crate::live::project::claude::{env_string, has_one_m_marker, ONE_M_MARKER_FOR_CLIENT};
 use crate::provider::{ClaudeStackModel, Provider};
-use crate::proxy::model_mapper::strip_one_m_suffix_for_upstream;
+use crate::upstream::model_mapper::strip_one_m_suffix_for_upstream;
 use crate::services::provider::codex_client_catalog::StaleClients;
 
 use super::state::{self, StackState};

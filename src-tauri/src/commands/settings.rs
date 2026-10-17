@@ -716,7 +716,7 @@ pub async fn get_auto_launch_status() -> Result<bool, String> {
 #[tauri::command]
 pub async fn get_rectifier_config(
     state: tauri::State<'_, crate::AppState>,
-) -> Result<crate::proxy::types::RectifierConfig, String> {
+) -> Result<crate::upstream::types::RectifierConfig, String> {
     state.db.get_rectifier_config().map_err(|e| e.to_string())
 }
 
@@ -724,7 +724,7 @@ pub async fn get_rectifier_config(
 #[tauri::command]
 pub async fn set_rectifier_config(
     state: tauri::State<'_, crate::AppState>,
-    config: crate::proxy::types::RectifierConfig,
+    config: crate::upstream::types::RectifierConfig,
 ) -> Result<bool, String> {
     state
         .db
@@ -737,7 +737,7 @@ pub async fn set_rectifier_config(
 #[tauri::command]
 pub async fn get_optimizer_config(
     state: tauri::State<'_, crate::AppState>,
-) -> Result<crate::proxy::types::OptimizerConfig, String> {
+) -> Result<crate::upstream::types::OptimizerConfig, String> {
     state.db.get_optimizer_config().map_err(|e| e.to_string())
 }
 
@@ -745,7 +745,7 @@ pub async fn get_optimizer_config(
 #[tauri::command]
 pub async fn set_optimizer_config(
     state: tauri::State<'_, crate::AppState>,
-    config: crate::proxy::types::OptimizerConfig,
+    config: crate::upstream::types::OptimizerConfig,
 ) -> Result<bool, String> {
     state
         .db
@@ -758,7 +758,7 @@ pub async fn set_optimizer_config(
 #[tauri::command]
 pub async fn get_copilot_optimizer_config(
     state: tauri::State<'_, crate::AppState>,
-) -> Result<crate::proxy::types::CopilotOptimizerConfig, String> {
+) -> Result<crate::upstream::types::CopilotOptimizerConfig, String> {
     state
         .db
         .get_copilot_optimizer_config()
@@ -769,7 +769,7 @@ pub async fn get_copilot_optimizer_config(
 #[tauri::command]
 pub async fn set_copilot_optimizer_config(
     state: tauri::State<'_, crate::AppState>,
-    config: crate::proxy::types::CopilotOptimizerConfig,
+    config: crate::upstream::types::CopilotOptimizerConfig,
 ) -> Result<bool, String> {
     state
         .db
@@ -782,7 +782,7 @@ pub async fn set_copilot_optimizer_config(
 #[tauri::command]
 pub async fn get_log_config(
     state: tauri::State<'_, crate::AppState>,
-) -> Result<crate::proxy::types::LogConfig, String> {
+) -> Result<crate::upstream::types::LogConfig, String> {
     state.db.get_log_config().map_err(|e| e.to_string())
 }
 
@@ -790,7 +790,7 @@ pub async fn get_log_config(
 #[tauri::command]
 pub async fn set_log_config(
     state: tauri::State<'_, crate::AppState>,
-    config: crate::proxy::types::LogConfig,
+    config: crate::upstream::types::LogConfig,
 ) -> Result<bool, String> {
     state
         .db

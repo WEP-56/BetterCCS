@@ -6,9 +6,9 @@ use crate::app_config::AppType;
 use crate::config::{get_claude_settings_path, read_json_file};
 use crate::database::Database;
 use crate::provider::Provider;
-use crate::proxy::server::ProxyServer;
-use crate::proxy::switch_lock::SwitchLockManager;
-use crate::proxy::types::*;
+use crate::upstream::server::ProxyServer;
+use crate::upstream::switch_lock::SwitchLockManager;
+use crate::upstream::types::*;
 use serde_json::{json, Value};
 use std::sync::Arc;
 use tauri::Emitter;
@@ -611,7 +611,7 @@ impl ProxyService {
     /// 如果代理服务器正在运行，将新配置应用到所有已创建的熔断器实例
     pub async fn update_circuit_breaker_configs(
         &self,
-        config: crate::proxy::CircuitBreakerConfig,
+        config: crate::upstream::CircuitBreakerConfig,
     ) -> Result<(), String> {
         if let Some(server) = self.server.read().await.as_ref() {
             server.update_circuit_breaker_configs(config).await;
@@ -626,7 +626,7 @@ impl ProxyService {
     pub async fn update_circuit_breaker_config_for_app(
         &self,
         app_type: &str,
-        config: crate::proxy::CircuitBreakerConfig,
+        config: crate::upstream::CircuitBreakerConfig,
     ) -> Result<(), String> {
         if let Some(server) = self.server.read().await.as_ref() {
             server

@@ -4,11 +4,11 @@ use crate::app_config::AppType;
 use crate::commands::codex_oauth::CodexOAuthState;
 use crate::commands::copilot::CopilotAuthState;
 use crate::commands::xai_oauth::XaiOAuthState;
-use crate::proxy::providers::codex_oauth_auth::CodexOAuthError;
-use crate::proxy::providers::copilot_auth::{
+use crate::upstream::providers::codex_oauth_auth::CodexOAuthError;
+use crate::upstream::providers::copilot_auth::{
     CopilotAuthError, GitHubAccount, GitHubDeviceCodeResponse,
 };
-use crate::proxy::providers::xai_oauth_auth::{XaiOAuthAccount, XaiOAuthError};
+use crate::upstream::providers::xai_oauth_auth::{XaiOAuthAccount, XaiOAuthError};
 use crate::store::AppState;
 
 const AUTH_PROVIDER_GITHUB_COPILOT: &str = "github_copilot";

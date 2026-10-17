@@ -1694,7 +1694,7 @@ mod tests {
     }
 
     fn set_proxy_port(db: &Database, port: u16) {
-        let config = crate::proxy::types::ProxyConfig {
+        let config = crate::upstream::types::ProxyConfig {
             listen_port: port,
             ..Default::default()
         };

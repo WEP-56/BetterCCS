@@ -11,8 +11,8 @@
 use crate::config::get_claude_config_dir;
 use crate::database::{lock_conn, Database};
 use crate::error::AppError;
-use crate::proxy::usage::calculator::{CostCalculator, ModelPricing};
-use crate::proxy::usage::parser::{claude_cache_creation_1h_tokens, TokenUsage};
+use crate::upstream::usage::calculator::{CostCalculator, ModelPricing};
+use crate::upstream::usage::parser::{claude_cache_creation_1h_tokens, TokenUsage};
 use crate::services::usage_stats::{
     effective_usage_log_filter, find_model_pricing, has_matching_proxy_usage_log, DedupKey,
 };
@@ -873,7 +873,7 @@ fn sync_single_file(
 
         let request_id = format!(
             "{}{}",
-            crate::proxy::usage::parser::SESSION_REQUEST_ID_PREFIX,
+            crate::upstream::usage::parser::SESSION_REQUEST_ID_PREFIX,
             msg.message_id
         );
 
@@ -1792,7 +1792,7 @@ mod tests {
                 "SELECT COUNT(*) FROM proxy_request_logs WHERE request_id = ?1",
                 rusqlite::params![format!(
                     "{}msg_x",
-                    crate::proxy::usage::parser::SESSION_REQUEST_ID_PREFIX
+                    crate::upstream::usage::parser::SESSION_REQUEST_ID_PREFIX
                 )],
                 |row| row.get(0),
             )?;
@@ -1856,7 +1856,7 @@ mod tests {
             "SELECT COUNT(*) FROM proxy_request_logs WHERE request_id = ?1",
             rusqlite::params![format!(
                 "{}msg_a",
-                crate::proxy::usage::parser::SESSION_REQUEST_ID_PREFIX
+                crate::upstream::usage::parser::SESSION_REQUEST_ID_PREFIX
             )],
             |row| row.get(0),
         )?;

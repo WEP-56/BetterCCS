@@ -45,7 +45,7 @@ pub(super) async fn ensure_update_node(tool: &str) -> Result<(), String> {
     let Some(package) = npm_package_for(tool) else {
         return Ok(());
     };
-    let client = crate::proxy::http_client::get();
+    let client = crate::upstream::http_client::get();
     let Some(latest) = fetch_npm_dist_tags(&client, package)
         .await
         .and_then(|tags| tags.get("latest")?.as_str().map(str::to_string))

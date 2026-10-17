@@ -307,7 +307,7 @@ fn fetch_models(login: &OfficialLogin, version: &str, etag: Option<&str>) -> Fet
     let etag = etag.map(str::to_string);
     let run = move || {
         tauri::async_runtime::block_on(async move {
-            let mut request = crate::proxy::http_client::get()
+            let mut request = crate::upstream::http_client::get()
                 .get(crate::services::codex_oauth_models::CODEX_OAUTH_MODELS_URL)
                 .query(&[("client_version", version.as_str())])
                 .header("Authorization", format!("Bearer {access_token}"))

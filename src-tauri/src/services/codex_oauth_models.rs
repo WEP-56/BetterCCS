@@ -3,7 +3,7 @@
 //! ChatGPT Codex exposes models through `chatgpt.com/backend-api/codex/models`,
 //! which is not an OpenAI-compatible `/v1/models` endpoint.
 
-use crate::proxy::providers::codex_oauth_auth::{
+use crate::upstream::providers::codex_oauth_auth::{
     CODEX_OAUTH_CLIENT_VERSION, CODEX_OAUTH_ORIGINATOR,
 };
 use crate::services::model_fetch::FetchedModel;
@@ -18,7 +18,7 @@ pub async fn fetch_models_with_token(
     token: &str,
     account_id: &str,
 ) -> Result<Vec<FetchedModel>, String> {
-    let client = crate::proxy::http_client::get();
+    let client = crate::upstream::http_client::get();
     let response = build_models_request(&client, token, account_id)
         .send()
         .await

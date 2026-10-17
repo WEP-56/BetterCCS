@@ -3,8 +3,8 @@
 //! 提供前端调用的 API 接口
 
 use crate::error::AppError;
-use crate::proxy::types::*;
-use crate::proxy::{CircuitBreakerConfig, CircuitBreakerStats};
+use crate::upstream::types::*;
+use crate::upstream::{CircuitBreakerConfig, CircuitBreakerStats};
 use crate::store::AppState;
 use std::str::FromStr;
 
@@ -509,7 +509,7 @@ pub async fn reset_circuit_breaker(
 
                     // 创建故障转移切换管理器并执行切换
                     let switch_manager =
-                        crate::proxy::failover_switch::FailoverSwitchManager::new();
+                        crate::upstream::failover_switch::FailoverSwitchManager::new();
                     if let Err(e) = switch_manager
                         .try_switch(Some(&app_handle), &app_type, &provider_id, &provider_name)
                         .await

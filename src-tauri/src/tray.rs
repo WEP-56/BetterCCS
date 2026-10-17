@@ -855,7 +855,7 @@ fn quota_note(
 }
 
 fn managed_codex_account_id(provider: &Provider) -> Option<String> {
-    if crate::proxy::providers::is_codex_official_provider(provider) {
+    if crate::upstream::providers::is_codex_official_provider(provider) {
         return provider
             .meta
             .as_ref()
@@ -963,7 +963,7 @@ const MANAGED_OAUTH_PROVIDER_TYPES: &[&str] = &["github_copilot", "codex_oauth",
 /// 官方账号卡（同前端 `isOfficialAccount`）：Codex 早期绑定托管账号的官方卡没有 category，按身份认。
 fn is_official_account(app: &AppType, provider: &Provider) -> bool {
     provider.category.as_deref() == Some("official")
-        || (*app == AppType::Codex && crate::proxy::providers::is_codex_official_provider(provider))
+        || (*app == AppType::Codex && crate::upstream::providers::is_codex_official_provider(provider))
 }
 
 /// 官方订阅不经过路由（Codex 官方卡除外）：路由 / 聚合下不能选。

@@ -354,7 +354,7 @@ fn proxy_model_fields(env: &Map<String, Value>) -> Vec<(&'static str, String)> {
         let display_name = env_string(env, name_key)
             .map(str::to_string)
             .unwrap_or_else(|| {
-                crate::proxy::model_mapper::strip_one_m_suffix_for_upstream(upstream)
+                crate::upstream::model_mapper::strip_one_m_suffix_for_upstream(upstream)
                     .trim()
                     .to_string()
             });

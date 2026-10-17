@@ -45,8 +45,8 @@ use crate::mode::operation::{AppWrite, FileChange, OperationReport};
 use crate::mode::stack::Member;
 use crate::mode::state::{Contract, PendingTarget};
 use crate::provider::Provider;
-use crate::proxy::providers::codex_oauth_auth::CodexLiveAuthSwitchGuard;
-use crate::proxy::providers::codex_oauth_auth::CodexOAuthManager;
+use crate::upstream::providers::codex_oauth_auth::CodexLiveAuthSwitchGuard;
+use crate::upstream::providers::codex_oauth_auth::CodexOAuthManager;
 use crate::services::subscription::CodexKeychainLogin;
 use std::sync::Arc;
 
@@ -62,7 +62,7 @@ fn app() -> &'static str {
 /// 绑定托管账号时没存 category 的卡）。
 pub(crate) fn is_official(provider: &Provider) -> bool {
     provider.category.as_deref() == Some("official")
-        || crate::proxy::providers::is_codex_official_provider(provider)
+        || crate::upstream::providers::is_codex_official_provider(provider)
 }
 
 fn managed_account(provider: &Provider) -> Option<String> {
@@ -73,7 +73,7 @@ fn managed_account(provider: &Provider) -> Option<String> {
 pub(crate) fn configured_proxy_base_url(db: &Database) -> String {
     let (address, port) = db.get_proxy_client_endpoint_sync();
     let port = if port == 0 {
-        crate::proxy::types::ProxyConfig::default().listen_port
+        crate::upstream::types::ProxyConfig::default().listen_port
     } else {
         port
     };
@@ -379,7 +379,7 @@ fn project(provider: &Provider) -> Result<CodexProjection, AppError> {
 /// 这个供应商的独有字段，含 `web_search`（需要时为 `"disabled"`）。
 fn exclusive_of(provider: &Provider, projection: &CodexProjection) -> Vec<(String, TomlValue)> {
     let mut exclusive = projection.exclusive.clone();
-    let profile = crate::proxy::providers::resolve_codex_catalog_tool_profile(provider);
+    let profile = crate::upstream::providers::resolve_codex_catalog_tool_profile(provider);
     if codex_disables_web_search(
         &provider.settings_config,
         &projection.catalog_input_text(),
@@ -681,7 +681,7 @@ pub(crate) fn plan(
             plan_codex_model_catalog(
                 &provider.settings_config,
                 &projection.catalog_input_text(),
-                crate::proxy::providers::resolve_codex_catalog_tool_profile(provider),
+                crate::upstream::providers::resolve_codex_catalog_tool_profile(provider),
             )?
             .catalog
         }
@@ -828,7 +828,7 @@ pub(crate) fn stack_subagent_choices(
         let row = CodexCatalogRow {
             settings: &member.provider.settings_config,
             config_text: &config_text,
-            profile: crate::proxy::providers::resolve_codex_catalog_tool_profile(&member.provider),
+            profile: crate::upstream::providers::resolve_codex_catalog_tool_profile(&member.provider),
         };
         let Ok(entries) = codex_stack_third_party_rows(&row) else {
             continue;
@@ -905,7 +905,7 @@ fn stack_catalog(
         CodexStackRoute::ThirdParty(CodexCatalogRow {
             settings: &route.settings_config,
             config_text: &route_text,
-            profile: crate::proxy::providers::resolve_codex_catalog_tool_profile(route),
+            profile: crate::upstream::providers::resolve_codex_catalog_tool_profile(route),
         })
     };
 
@@ -917,7 +917,7 @@ fn stack_catalog(
             Ok(projection) => Some((
                 member,
                 projection.catalog_input_text(),
-                crate::proxy::providers::resolve_codex_catalog_tool_profile(&member.provider),
+                crate::upstream::providers::resolve_codex_catalog_tool_profile(&member.provider),
             )),
             Err(error) => {
                 log::warn!(

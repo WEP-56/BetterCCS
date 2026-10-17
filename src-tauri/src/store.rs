@@ -1,5 +1,5 @@
 use crate::database::Database;
-use crate::proxy::providers::codex_oauth_auth::CodexOAuthManager;
+use crate::upstream::providers::codex_oauth_auth::CodexOAuthManager;
 use crate::services::{ProxyService, UsageCache};
 use std::sync::Arc;
 

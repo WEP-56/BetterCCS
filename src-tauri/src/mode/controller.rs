@@ -2473,7 +2473,7 @@ mod mode_tests {
     use crate::mode::operation::failpoint;
     use crate::mode::stack::StackMemberView;
     use crate::mode::state::{self, Mode};
-    use crate::proxy::types::ProxyConfig;
+    use crate::upstream::types::ProxyConfig;
     use crate::services::provider::ProviderService;
     use serde_json::{json, Value};
     use serial_test::serial;
@@ -6346,11 +6346,11 @@ model_provider = "c"
         for id in ["a", "kimi"] {
             state.db.add_to_failover_queue("claude", id).unwrap();
         }
-        let proxy = crate::proxy::server::ProxyState::for_test(state.db.clone());
+        let proxy = crate::upstream::server::ProxyState::for_test(state.db.clone());
         let body = json!({ "model": "claude-sonnet-5", "messages": [] });
         let headers = axum::http::HeaderMap::new();
         let context = || {
-            crate::proxy::handler_context::RequestContext::new(
+            crate::upstream::handler_context::RequestContext::new(
                 &proxy,
                 &body,
                 &headers,
@@ -6360,7 +6360,7 @@ model_provider = "c"
                 None,
             )
         };
-        let chain = |ctx: &crate::proxy::handler_context::RequestContext| {
+        let chain = |ctx: &crate::upstream::handler_context::RequestContext| {
             ctx.get_providers()
                 .into_iter()
                 .map(|provider| provider.id)

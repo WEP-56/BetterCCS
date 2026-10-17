@@ -7,7 +7,7 @@ use reqwest::{Method, RequestBuilder, StatusCode, Url};
 use std::time::Duration;
 
 use crate::error::AppError;
-use crate::proxy::http_client;
+use crate::upstream::http_client;
 use crate::services::sync_protocol::{transfer_timeout, TRANSFER_IDLE_TIMEOUT};
 use futures::StreamExt;
 

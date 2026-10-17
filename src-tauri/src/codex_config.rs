@@ -237,7 +237,7 @@ pub enum CodexCatalogToolProfile {
 impl CodexCatalogToolProfile {
     /// Pick the catalog tool profile from a provider's `apiFormat` meta value.
     ///
-    /// Prefer [`crate::proxy::providers::codex::resolve_codex_catalog_tool_profile`],
+    /// Prefer [`crate::upstream::providers::codex::resolve_codex_catalog_tool_profile`],
     /// which also honors settings-level `apiFormat` and the TOML `wire_api` (matching
     /// the proxy router). This string-only mapping is the fallback for non-Anthropic
     /// cases.

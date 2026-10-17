@@ -26,7 +26,7 @@ fn require_failover_provider(
         .get_provider_by_id(provider_id, app_type)
         .map_err(|error| error.to_string())?
         .ok_or_else(|| format!("供应商不存在: {provider_id}"))?;
-    if !crate::proxy::provider_router::provider_supports_failover(app_type, &provider) {
+    if !crate::upstream::provider_router::provider_supports_failover(app_type, &provider) {
         return Err("Codex Official 账号卡不支持自动故障转移".to_string());
     }
     Ok(provider)
@@ -91,7 +91,7 @@ pub async fn get_failover_queue(
         .into_iter()
         .filter(|item| {
             providers.get(&item.provider_id).is_some_and(|provider| {
-                crate::proxy::provider_router::provider_supports_failover(&app_type, provider)
+                crate::upstream::provider_router::provider_supports_failover(&app_type, provider)
             })
         })
         .collect())
@@ -111,7 +111,7 @@ pub async fn get_available_providers_for_failover(
     Ok(providers
         .into_iter()
         .filter(|provider| {
-            crate::proxy::provider_router::provider_supports_failover(&app_type, provider)
+            crate::upstream::provider_router::provider_supports_failover(&app_type, provider)
         })
         .collect())
 }
@@ -210,7 +210,7 @@ pub async fn set_auto_failover_enabled(
                 all_providers
                     .get(&item.provider_id)
                     .is_some_and(|provider| {
-                        crate::proxy::provider_router::provider_supports_failover(
+                        crate::upstream::provider_router::provider_supports_failover(
                             &app_type, provider,
                         )
                     })
@@ -246,7 +246,7 @@ pub async fn set_auto_failover_enabled(
                     all_providers
                         .get(&item.provider_id)
                         .is_some_and(|provider| {
-                            crate::proxy::provider_router::provider_supports_failover(
+                            crate::upstream::provider_router::provider_supports_failover(
                                 &app_type, provider,
                             )
                         })

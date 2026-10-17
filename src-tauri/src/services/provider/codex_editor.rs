@@ -31,7 +31,7 @@ use crate::live::project::codex::{
 use crate::mode::operation::{AppWrite, FileChange};
 use crate::mode::state::{op, PendingTarget};
 use crate::provider::{Provider, ProviderMeta};
-use crate::proxy::providers::codex_oauth_auth::CodexOAuthManager;
+use crate::upstream::providers::codex_oauth_auth::CodexOAuthManager;
 use crate::store::AppState;
 
 use super::claude_editor::{ConflictPolicy, EditorView, InactiveField};

@@ -73,7 +73,7 @@ impl Database {
             provider.category = category;
             provider.meta = Some(serde_json::from_value(meta.clone()).map_err(parse_error)?);
             if provider.category.is_none()
-                && crate::proxy::providers::is_codex_official_provider(&provider)
+                && crate::upstream::providers::is_codex_official_provider(&provider)
             {
                 provider.category = Some("official".to_string());
             }
