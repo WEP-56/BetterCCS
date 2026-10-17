@@ -204,7 +204,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         type="button"
         aria-label={label}
         onClick={onClick}
-        className="rounded-md bg-surface/90 p-1 text-fg-2 shadow-sm hover:bg-subtle hover:text-fg-1"
+        className="rounded-md bg-surface p-1 text-fg-2 shadow-sm hover:bg-subtle hover:text-fg-1"
       >
         {icon}
       </button>

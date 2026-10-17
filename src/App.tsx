@@ -1507,7 +1507,9 @@ function App() {
     <WindowControlsContext.Provider
       value={useAppWindowControls ? <WindowControls /> : null}
     >
-      <div className="flex h-screen overflow-hidden bg-app text-fg-1 selection:bg-action/25">
+      {/* 文字选中用暖灰档位：action 是纯 var() 色，带 /25 透明度不会生成样式，
+          选中态会退回浏览器的蓝色 */}
+      <div className="flex h-screen overflow-hidden bg-app text-fg-1 selection:bg-selected">
         <Sidebar
           activeApp={activeApp}
           view={currentView}
