@@ -5,6 +5,54 @@
 use crate::database::{lock_conn, Database};
 use crate::error::AppError;
 use rusqlite::params;
+use serde::{Deserialize, Serialize};
+
+/// 应用诊断日志（`cc-switch.log`）的级别配置。
+///
+/// 存在 settings 表的 `log_config` 字段里（JSON）。和请求用量、crash 日志无关。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LogConfig {
+    /// 总开关：是否启用日志
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    /// 日志级别：error / warn / info / debug / trace
+    #[serde(default = "default_log_level")]
+    pub level: String,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_log_level() -> String {
+    "info".to_string()
+}
+
+impl Default for LogConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            level: "info".to_string(),
+        }
+    }
+}
+
+impl LogConfig {
+    pub fn to_level_filter(&self) -> log::LevelFilter {
+        if !self.enabled {
+            return log::LevelFilter::Off;
+        }
+        match self.level.to_lowercase().as_str() {
+            "error" => log::LevelFilter::Error,
+            "warn" => log::LevelFilter::Warn,
+            "info" => log::LevelFilter::Info,
+            "debug" => log::LevelFilter::Debug,
+            "trace" => log::LevelFilter::Trace,
+            _ => log::LevelFilter::Info,
+        }
+    }
+}
 
 impl Database {
     const LEGACY_COMMON_CONFIG_MIGRATED_KEY: &'static str = "common_config_legacy_migrated_v1";
@@ -235,4 +283,20 @@ impl Database {
         log::info!("已清除所有代理接管状态");
         Ok(())
     }
+    // --- 应用诊断日志 ---
+
+    pub fn get_log_config(&self) -> Result<LogConfig, AppError> {
+        match self.get_setting("log_config")? {
+            Some(json) => serde_json::from_str(&json)
+                .map_err(|e| AppError::Database(format!("解析日志配置失败: {e}"))),
+            None => Ok(LogConfig::default()),
+        }
+    }
+
+    pub fn set_log_config(&self, config: &LogConfig) -> Result<(), AppError> {
+        let json = serde_json::to_string(config)
+            .map_err(|e| AppError::Database(format!("序列化日志配置失败: {e}")))?;
+        self.set_setting("log_config", &json)
+    }
+
 }

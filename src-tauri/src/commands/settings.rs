@@ -684,3 +684,30 @@ mod tests {
 pub async fn get_auto_launch_status() -> Result<bool, String> {
     crate::auto_launch::is_auto_launch_enabled().map_err(|e| format!("获取开机自启状态失败: {e}"))
 }
+
+/// 获取应用诊断日志配置
+#[tauri::command]
+pub async fn get_log_config(
+    state: tauri::State<'_, crate::AppState>,
+) -> Result<crate::database::LogConfig, String> {
+    state.db.get_log_config().map_err(|e| e.to_string())
+}
+
+/// 设置应用诊断日志配置
+#[tauri::command]
+pub async fn set_log_config(
+    state: tauri::State<'_, crate::AppState>,
+    config: crate::database::LogConfig,
+) -> Result<bool, String> {
+    state
+        .db
+        .set_log_config(&config)
+        .map_err(|e| e.to_string())?;
+    log::set_max_level(config.to_level_filter());
+    log::info!(
+        "日志配置已更新: enabled={}, level={}",
+        config.enabled,
+        config.level
+    );
+    Ok(true)
+}
