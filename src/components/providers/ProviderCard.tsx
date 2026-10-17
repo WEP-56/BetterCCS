@@ -61,12 +61,12 @@ interface ProviderCardProps {
   dragHandleProps?: DragHandleProps;
 }
 
-/** 当前那张：模式色边框 + 淡底；共存式「已添加」是中性的。 */
+/** 当前那张：模式色淡底 + 极轻边框；共存式「已添加」是中性的。 */
 const TONE_CLASS: Record<CardTone, string> = {
   direct: "border-direct-border bg-direct-soft",
   route: "border-route-border bg-route-soft",
   stack: "border-stack-border bg-stack-soft",
-  neutral: "border-border-strong bg-subtle",
+  neutral: "border-border bg-subtle",
 };
 
 const CHIP_CLASS: Record<CardChip["tone"], string> = {
@@ -294,10 +294,10 @@ export function ProviderCard({
   return (
     <div
       className={cn(
-        "group relative rounded-panel border transition-[border-color,box-shadow,background-color] duration-150",
+        "group relative rounded-panel border border-transparent transition-[border-color,box-shadow,background-color] duration-150",
         presentation.tone
           ? TONE_CLASS[presentation.tone]
-          : "border-border bg-surface hover:border-border-strong hover:shadow-v7-sm",
+          : "bg-surface hover:border-border hover:shadow-v7-sm",
         dragHandleProps?.isDragging && "z-10 cursor-grabbing shadow-v7-md",
       )}
     >
@@ -425,7 +425,7 @@ export function ProviderCard({
               type="button"
               onClick={handleOpenWebsite}
               className={cn(
-                "mt-0.5 inline-flex max-w-full items-center overflow-hidden text-start text-caption text-fg-2",
+                "mt-0.5 inline-flex max-w-full items-center overflow-hidden text-start text-caption text-fg-3",
                 isClickableUrl
                   ? "cursor-pointer decoration-border-strong underline-offset-[3px] hover:underline"
                   : "cursor-default",

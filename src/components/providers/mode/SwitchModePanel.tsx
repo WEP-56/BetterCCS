@@ -23,15 +23,12 @@ import {
   useAutoFailoverEnabled,
   useFailoverQueue,
   useRemoveFromFailoverQueue,
-  useSetAutoFailoverEnabled,
 } from "@/lib/query/failover";
 import { useModeActions } from "@/hooks/useModeActions";
 import { getRoutingReason } from "@/utils/routingReason";
-import { CODEX_OFFICIAL_PROVIDER_ID } from "@/utils/providerCapabilities";
 import { extractErrorMessage } from "@/utils/errorUtils";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ProviderList } from "@/components/providers/ProviderList";
 import { CodexStaleClientsNotice } from "@/components/providers/CodexStaleClientsNotice";
 import {
@@ -39,7 +36,6 @@ import {
   queueMoveSortUpdates,
 } from "@/components/providers/presentation";
 import { APP_DISPLAY_NAME } from "@/components/shell/AppGlyph";
-import { ModeTabs } from "./ModeTabs";
 import { ModeDialog, type ModeDialogState } from "./ModeDialog";
 import {
   sameStackSubagent,
@@ -47,8 +43,6 @@ import {
   stackSubagentValue,
   type StackSubagentValue,
 } from "./StackSubagentFields";
-import { RouteSettingsSheet } from "./RouteSettingsSheet";
-import { StackSettingsSheet } from "./StackSettingsSheet";
 import { useDesktopConfigMessages } from "./useDesktopConfigMessages";
 
 type ListCallbacks = Pick<
@@ -118,12 +112,11 @@ export function SwitchModePanel({
   const directId = modeView?.directProviderId ?? null;
   const routeId = modeView?.routeProviderId ?? null;
 
-  // 离开页面再回来、或生效的模式变了，一律落在生效的那格（「查看中」不持久化）
-  const [view, setView] = useState<AppMode>(active);
+  // 路由 / 聚合的模式入口已在 UI 层下线：这里永远看直连列表，
+  // 旧配置仍处于路由模式时，下面会用一条通知条提示并给出「回到直连」
+  // 断言成 AppMode：下面仍有按 view 分支的死代码，阶段二删后端时一起清
+  const view = "direct" as AppMode;
   const [searchSlot, setSearchSlot] = useState<HTMLDivElement | null>(null);
-  useEffect(() => {
-    setView(active);
-  }, [app, active]);
   useEffect(() => {
     onViewChange?.(app, view);
   }, [app, view, onViewChange]);
@@ -135,7 +128,6 @@ export function SwitchModePanel({
   const hasFailover = isProxyAppId(app);
   const { data: failoverOn = false } = useAutoFailoverEnabled(app, hasFailover);
   const { data: queue } = useFailoverQueue(app, hasFailover);
-  const setFailover = useSetAutoFailoverEnabled();
   const addToQueue = useAddToFailoverQueue();
   const removeFromQueue = useRemoveFromFailoverQueue();
   const { data: stack } = useProxyStack(app, isStackAppId(app));
@@ -145,9 +137,6 @@ export function SwitchModePanel({
   const desktopMessages = useDesktopConfigMessages(app === "claude-desktop");
 
   const [dialog, setDialog] = useState<ModeDialogState | null>(null);
-  const [routeSettingsOpen, setRouteSettingsOpen] = useState(false);
-  const [stackSettingsOpen, setStackSettingsOpen] = useState(false);
-  const [confirmFailover, setConfirmFailover] = useState(false);
   // 关掉的是哪一份提示（后端的 staleRevision）：目录或登录又变了就是新的一份，重新显示。
   const [staleDismissed, setStaleDismissed] = useState<string | null>(null);
   useEffect(() => {
@@ -276,60 +265,6 @@ export function SwitchModePanel({
           ? void onSwitch(provider)
           : void rememberDefault(provider),
     },
-  };
-
-  // 状态行：只在看生效的那格时显示；路由只写目标，不写本机地址和端口
-  const routeTarget = failoverOn ? t("mode.status.byQueue") : nameOf(routeId);
-  const otherMembers = (stack?.members ?? []).filter(
-    (member) => member.providerId !== routeId,
-  );
-  const otherModels = otherMembers.reduce(
-    (sum, member) => sum + member.modelIds.length,
-    0,
-  );
-  const status =
-    view !== active
-      ? undefined
-      : active === "direct"
-        ? { lead: t("mode.status.directLead"), value: nameOf(directId) }
-        : active === "route"
-          ? {
-              lead: t("mode.status.routeLead"),
-              value: `→ ${routeTarget}`,
-            }
-          : {
-              lead: t("mode.status.stackLead"),
-              value: t("mode.status.stackValue", {
-                name: nameOf(routeId),
-                count: otherMembers.length,
-                models: otherModels,
-              }),
-            };
-
-  const handleFailoverChange = (enabled: boolean) => {
-    if (enabled && !settings?.failoverConfirmed) {
-      setConfirmFailover(true);
-      return;
-    }
-    setFailover.mutate({ appType: app, enabled });
-  };
-
-  const confirmFailoverOn = async () => {
-    setConfirmFailover(false);
-    try {
-      const current = await settingsApi.get();
-      await settingsApi.save({
-        ...current,
-        failoverConfirmed: true,
-      });
-      await queryClient.invalidateQueries({ queryKey: ["settings"] });
-    } catch (error) {
-      console.error(
-        "[SwitchModePanel] Failed to save failover confirmation",
-        error,
-      );
-    }
-    setFailover.mutate({ appType: app, enabled: true });
   };
 
   const enterMode = async (
@@ -536,37 +471,17 @@ export function SwitchModePanel({
 
   return (
     <>
-      <ModeTabs
-        modes={modes}
-        active={active}
-        view={view}
-        onView={setView}
-        status={status}
-        failover={
-          hasFailover && view === "route" && active === "route"
-            ? {
-                enabled: failoverOn,
-                disabled: setFailover.isPending,
-                onChange: handleFailoverChange,
-              }
-            : undefined
-        }
-        onOpenRouteSettings={
-          hasFailover && view === "route" && active === "route"
-            ? () => setRouteSettingsOpen(true)
-            : undefined
-        }
-        onOpenStackSettings={
-          app === "codex" && view === "stack" && active === "stack"
-            ? () => setStackSettingsOpen(true)
-            : undefined
-        }
-        searchSlotRef={setSearchSlot}
-      />
+      {/* 模式页签已下线：这里只留搜索框的挂载点，不画任何分隔或状态行 */}
+      <div className="flex min-h-0 shrink-0 items-center justify-end gap-2 px-6 empty:hidden">
+        <div
+          ref={setSearchSlot}
+          className="flex min-w-0 shrink items-center empty:hidden"
+        />
+      </div>
       <div
         ref={scrollRef}
         id="main-content"
-        className="min-h-0 flex-1 overflow-y-auto scroll-stable overflow-x-hidden px-6 pb-12 pt-3"
+        className="min-h-0 flex-1 overflow-y-auto scroll-stable overflow-x-hidden px-6 pb-12 pt-2"
       >
         {notices.length > 0 && (
           <div role="status" className="mb-3 flex flex-col gap-2">
@@ -621,41 +536,6 @@ export function SwitchModePanel({
         }}
       />
 
-      {isProxyAppId(app) && (
-        <RouteSettingsSheet
-          app={app}
-          open={routeSettingsOpen}
-          onOpenChange={setRouteSettingsOpen}
-          onOpenSettings={onOpenRoutingSettings}
-        />
-      )}
-
-      {app === "codex" && (
-        <StackSettingsSheet
-          open={stackSettingsOpen}
-          onOpenChange={setStackSettingsOpen}
-          // 默认那家不发布 `ccs-*` 模型
-          models={(stack?.subagentModels ?? []).filter(
-            (model) => model.providerId !== routeId,
-          )}
-          // 官方做默认那家时，合并目录里有官方的 codex-auto-review，自动审批默认用它
-          routeOfficial={
-            !!routeId &&
-            (routeId === CODEX_OFFICIAL_PROVIDER_ID ||
-              providers[routeId]?.category === "official")
-          }
-        />
-      )}
-
-      <ConfirmDialog
-        isOpen={confirmFailover}
-        variant="info"
-        title={t("confirm.failover.title")}
-        message={t("confirm.failover.message")}
-        confirmText={t("confirm.failover.confirm")}
-        onConfirm={() => void confirmFailoverOn()}
-        onCancel={() => setConfirmFailover(false)}
-      />
     </>
   );
 }

@@ -959,7 +959,6 @@ export function SessionManagerPage({
                   <Button
                     variant="quiet"
                     size="icon-compact"
-                    className="h-8 w-8"
                     aria-label={t("sessionManager.moreActions", {
                       defaultValue: "会话的更多操作",
                     })}

@@ -222,7 +222,7 @@ export function AppsPage() {
             {(updatableCount > 0 || tools.batchAction) && (
               <Button
                 variant="neutral"
-                size="regular"
+                size="compact"
                 disabled={tools.isLoadingTools || Boolean(tools.batchAction)}
                 aria-busy={Boolean(tools.batchAction)}
                 onClick={() =>
@@ -243,7 +243,7 @@ export function AppsPage() {
             )}
             <Button
               variant="neutral"
-              size="regular"
+              size="compact"
               disabled={tools.isLoadingTools || tools.isAnyBusy}
               onClick={() => void tools.checkForUpdates()}
             >
@@ -275,7 +275,6 @@ export function AppsPage() {
                   <Button
                     variant="quiet"
                     size="icon-compact"
-                    className="h-8 w-8"
                     aria-label={t("appsPage.moreActions")}
                   >
                     <MoreHorizontal className="h-4 w-4" />

@@ -14,9 +14,7 @@ import {
   History,
   Info,
   KeyRound,
-  Layers,
   LayoutGrid,
-  Route,
   Server,
   Settings,
   SlidersHorizontal,
@@ -84,7 +82,7 @@ export function Sidebar(props: SidebarProps) {
       ref={navRef}
       aria-label={t("nav.mainLabel")}
       className={cn(
-        "relative flex h-full shrink-0 flex-col overflow-hidden whitespace-nowrap border-e border-border bg-sidebar text-body text-fg-1",
+        "relative flex h-full shrink-0 flex-col overflow-hidden whitespace-nowrap bg-sidebar text-body text-fg-1",
       )}
       style={{ width: sidebarWidth(collapsed) }}
     >
@@ -319,12 +317,8 @@ function MainDirectory({
         </div>
       </div>
 
-      <div
-        className={cn(
-          "h-px shrink-0 bg-border",
-          collapsed ? "mx-[18px] my-1.5" : "mx-4 mb-1.5 mt-0.5",
-        )}
-      />
+      {/* 分组之间只留白，不画分隔线 */}
+      <div className="h-3 shrink-0" />
 
       <div className="flex shrink-0 flex-col">
         {globals.map((item) => (
@@ -342,13 +336,8 @@ function MainDirectory({
         ))}
       </div>
 
-      {/* 和上面那条分隔线同样缩进、上下各留 6px，选中的最后一项不会贴着线 */}
-      <div
-        className={cn(
-          "my-1.5 h-px shrink-0 bg-border",
-          collapsed ? "mx-[18px]" : "mx-4",
-        )}
-      />
+      {/* 底栏（应用 / 设置）与导航之间同样只靠留白分开 */}
+      <div className="h-2 shrink-0" />
 
       <div
         className={cn(
@@ -385,25 +374,6 @@ function MainDirectory({
   );
 }
 
-function modeTag(
-  status: AppNavStatus,
-  t: (key: string) => string,
-): { label: string; className: string } | null {
-  if (status.mode === "route") {
-    return {
-      label: t("nav.mode.route"),
-      className: "bg-route-soft text-route-text",
-    };
-  }
-  if (status.mode === "stack") {
-    return {
-      label: t("nav.mode.stack"),
-      className: "bg-stack-soft text-stack-text",
-    };
-  }
-  return null;
-}
-
 function AppNavItem({
   app,
   collapsed,
@@ -419,28 +389,11 @@ function AppNavItem({
 }) {
   const { t } = useTranslation();
   const name = APP_DISPLAY_NAME[app];
-  const tag = modeTag(status, t);
-  const modeName =
-    status.mode === "route"
-      ? t("nav.mode.route")
-      : status.mode === "stack"
-        ? t("nav.mode.stack")
-        : null;
-  const tip = status.alert
-    ? `${name} · ${t("nav.needsAttention")}`
-    : modeName
-      ? `${name} · ${modeName}`
-      : name;
+  const tip = status.alert ? `${name} · ${t("nav.needsAttention")}` : name;
   const badgeBg = selected ? "bg-selected" : "bg-sidebar";
 
   if (collapsed) {
-    const marker = status.alert
-      ? { className: "bg-danger text-action-fg", icon: AlertGlyph }
-      : status.mode === "stack"
-        ? { className: "bg-stack-solid text-stack-on", icon: Layers }
-        : status.mode === "route"
-          ? { className: "bg-route-solid text-route-on", icon: Route }
-          : null;
+    const showAlert = Boolean(status.alert);
     return (
       <HoverTip content={tip} side="right" disableHoverableContent>
         <button
@@ -455,16 +408,15 @@ function AppNavItem({
         >
           <span className="relative flex">
             <AppGlyph app={app} size={20} badgeClassName={badgeBg} />
-            {marker && (
+            {showAlert && (
               <span
                 aria-hidden="true"
                 className={cn(
-                  "absolute -end-[7px] -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2",
+                  "absolute -end-[7px] -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-danger text-white",
                   selected ? "border-selected" : "border-sidebar",
-                  marker.className,
                 )}
               >
-                <marker.icon className="h-2 w-2" strokeWidth={3} />
+                <AlertGlyph className="h-2 w-2" />
               </span>
             )}
           </span>
@@ -491,20 +443,7 @@ function AppNavItem({
           aria-label={t("nav.needsAttention")}
           className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger"
         />
-      ) : (
-        // 选中的应用不再显示模式标签：页头下面的模式行已经写明
-        tag &&
-        !selected && (
-          <span
-            className={cn(
-              "h-[18px] whitespace-nowrap rounded-full px-1.5 text-badge leading-[18px]",
-              tag.className,
-            )}
-          >
-            {tag.label}
-          </span>
-        )
-      )}
+      ) : null}
     </button>
   );
 }
@@ -587,7 +526,7 @@ function NavItem({
       {collapsed && alert && (
         <span
           className={cn(
-            "absolute -end-[7px] -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-danger text-action-fg",
+            "absolute -end-[7px] -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-danger text-white",
             ring,
           )}
         >
@@ -641,7 +580,9 @@ function NavItem({
         aria-current={selected ? "page" : undefined}
         className={cn(
           "flex h-7 shrink-0 items-center gap-2 rounded-control px-2 text-start transition-colors hover:bg-subtle",
-          compact ? "min-w-0 flex-1" : "mx-2 w-[184px]",
+          compact
+            ? "min-w-0 flex-1 bg-surface hover:bg-subtle"
+            : "mx-2 w-[184px]",
           selected && "bg-selected font-medium hover:bg-selected",
         )}
       >
@@ -692,7 +633,6 @@ function NavItem({
 const SETTINGS_ITEMS: { section: SettingsSection; icon: IconComponent }[] = [
   { section: "general", icon: SlidersHorizontal },
   { section: "appConfig", icon: Folder },
-  { section: "routing", icon: Route },
   { section: "network", icon: Globe },
   { section: "data", icon: Database },
   { section: "about", icon: Info },

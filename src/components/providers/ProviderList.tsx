@@ -400,7 +400,7 @@ export function ProviderList({
         {[0, 1, 2].map((index) => (
           <div
             key={index}
-            className="h-[60px] w-full rounded-panel border border-dashed border-border bg-subtle"
+            className="h-[60px] w-full rounded-panel border border-dashed border-border/70 bg-subtle"
           />
         ))}
       </div>
@@ -552,7 +552,7 @@ export function ProviderList({
       )}
 
       {filteredProviders.length === 0 ? (
-        <div className="rounded-panel border border-dashed border-border px-6 py-8 text-center text-body text-fg-2">
+        <div className="rounded-panel border border-dashed border-border/70 px-6 py-8 text-center text-body text-fg-2">
           {t("provider.noSearchResults", {
             defaultValue: "No providers match your search.",
           })}
@@ -569,7 +569,7 @@ export function ProviderList({
                 <div className="pt-1">{renderSectionTitle(section)}</div>
               )}
               {section.items.length === 0 && section.emptyText ? (
-                <div className="rounded-panel border border-dashed border-border px-4 py-3 text-caption text-fg-3">
+                <div className="rounded-panel border border-dashed border-border/70 px-4 py-3 text-caption text-fg-3">
                   {section.emptyText}
                 </div>
               ) : (

@@ -71,7 +71,7 @@ export function PageTabs<T extends string>({
       className={cn(
         small
           ? "flex h-8 items-end gap-3"
-          : "flex h-9 items-end gap-4 border-b border-border",
+          : "flex h-9 items-end gap-4 border-b border-border/60",
         className,
       )}
     >

@@ -173,7 +173,6 @@ export const FullScreenPanel: React.FC<FullScreenPanelProps> = ({
                   type="button"
                   variant="quiet"
                   size="icon-compact"
-                  className="h-8 w-8"
                   onClick={onClose}
                   aria-label={backLabel ?? t("common.back")}
                 >

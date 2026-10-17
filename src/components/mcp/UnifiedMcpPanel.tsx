@@ -585,7 +585,7 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
             <Button
               type="button"
               variant="quiet"
-              size="regular"
+              size="compact"
               disabled={controlsDisabled}
               onClick={() => void handleImport()}
             >
@@ -595,7 +595,7 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
             <Button
               type="button"
               variant="solid"
-              size="regular"
+              size="compact"
               disabled={controlsDisabled}
               onClick={openAdd}
             >
@@ -609,7 +609,6 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
                     type="button"
                     variant="quiet"
                     size="icon-compact"
-                    className="h-8 w-8"
                     aria-label={t("mcpPage.moreActions")}
                   >
                     <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />

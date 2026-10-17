@@ -1088,7 +1088,7 @@ function App() {
           <Button
             variant="quiet"
             size="icon-compact"
-            className="h-8 w-8"
+            className="h-7 w-7"
             aria-label={t("appPage.moreActions", {
               name: APP_DISPLAY_NAME[activeApp],
             })}
@@ -1157,7 +1157,7 @@ function App() {
           {activeApp === "hermes" && (
             <Button
               variant="quiet"
-              size="regular"
+              size="compact"
               onClick={() => void openHermesWebUI()}
             >
               {t("appPage.webUi")}
@@ -1174,7 +1174,7 @@ function App() {
                 <Button
                   variant="quiet"
                   size="icon-compact"
-                  className="h-8 w-8"
+                  className="h-7 w-7"
                   aria-label={t("provider.searchAriaLabel")}
                   aria-pressed={providerSearchOpen}
                   onClick={() => setProviderSearchOpen((open) => !open)}
@@ -1186,7 +1186,7 @@ function App() {
           {currentView === "providers" && (
             <Button
               variant="solid"
-              size="regular"
+              size="compact"
               onClick={() => openAddProvider(currentModeView)}
             >
               <Plus className="h-4 w-4" />
@@ -1290,7 +1290,7 @@ function App() {
       <div
         ref={providerScrollContainerRef}
         id="main-content"
-        className="min-h-0 flex-1 overflow-y-auto scroll-stable overflow-x-hidden px-6 pb-12 pt-4"
+        className="min-h-0 flex-1 overflow-y-auto scroll-stable overflow-x-hidden px-6 pb-12 pt-2"
       >
         <div className="space-y-4">
           <ProviderList
