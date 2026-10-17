@@ -302,7 +302,7 @@ function MainDirectory({
         <div
           role="group"
           aria-label={t("nav.appsGroup")}
-          className="flex shrink-0 flex-col"
+          className="flex shrink-0 flex-col gap-0.5"
         >
           {apps.map((app) => (
             <AppNavItem
@@ -318,9 +318,9 @@ function MainDirectory({
       </div>
 
       {/* 分组之间只留白，不画分隔线 */}
-      <div className="h-3 shrink-0" />
+      <div className="h-5 shrink-0" />
 
-      <div className="flex shrink-0 flex-col">
+      <div className="flex shrink-0 flex-col gap-0.5">
         {globals.map((item) => (
           <NavItem
             key={item.page}
@@ -337,13 +337,13 @@ function MainDirectory({
       </div>
 
       {/* 底栏（应用 / 设置）与导航之间同样只靠留白分开 */}
-      <div className="h-2 shrink-0" />
+      <div className="h-3 shrink-0" />
 
       <div
         className={cn(
           "flex shrink-0 pb-2",
           // 收起时竖排，和上面全局项一样无间隙
-          collapsed ? "flex-col" : "gap-1 px-2",
+          collapsed ? "flex-col" : "gap-1.5 px-2",
         )}
       >
         <NavItem
@@ -402,7 +402,7 @@ function AppNavItem({
           aria-label={tip}
           aria-current={selected ? "page" : undefined}
           className={cn(
-            "mx-auto flex h-8 w-12 shrink-0 items-center justify-center rounded-control transition-colors hover:bg-subtle",
+            "mx-auto flex h-9 w-12 shrink-0 items-center justify-center rounded-control transition-colors hover:bg-subtle",
             selected && "bg-selected hover:bg-selected",
           )}
         >
@@ -431,11 +431,11 @@ function AppNavItem({
       onClick={onSelect}
       aria-current={selected ? "page" : undefined}
       className={cn(
-        "mx-2 flex h-7 w-[184px] shrink-0 items-center gap-2 rounded-control px-2 text-start transition-colors hover:bg-subtle",
+        "mx-2 flex h-9 shrink-0 items-center gap-2.5 rounded-control px-2.5 text-start transition-colors hover:bg-subtle",
         selected && "bg-selected font-medium hover:bg-selected",
       )}
     >
-      <AppGlyph app={app} size={16} badgeClassName={badgeBg} />
+      <AppGlyph app={app} size={18} badgeClassName={badgeBg} />
       <span className="min-w-0 flex-1 truncate">{name}</span>
       {status.alert ? (
         <span
@@ -549,7 +549,7 @@ function NavItem({
           aria-label={title ?? accessibleName}
           aria-current={selected ? "page" : undefined}
           className={cn(
-            "mx-auto flex h-8 w-12 shrink-0 items-center justify-center rounded-control transition-colors hover:bg-subtle",
+            "mx-auto flex h-9 w-12 shrink-0 items-center justify-center rounded-control transition-colors hover:bg-subtle",
             selected && "bg-selected hover:bg-selected",
           )}
         >
@@ -579,10 +579,10 @@ function NavItem({
         aria-label={trailingLabel ? accessibleName : undefined}
         aria-current={selected ? "page" : undefined}
         className={cn(
-          "flex h-7 shrink-0 items-center gap-2 rounded-control px-2 text-start transition-colors hover:bg-subtle",
+          "flex h-9 shrink-0 items-center gap-2.5 rounded-control px-2.5 text-start transition-colors hover:bg-subtle",
           compact
             ? "min-w-0 flex-1 bg-surface hover:bg-subtle"
-            : "mx-2 w-[184px]",
+            : "mx-2",
           selected && "bg-selected font-medium hover:bg-selected",
         )}
       >
@@ -666,7 +666,7 @@ function SettingsDirectory({
         <button
           type="button"
           onClick={onExitSettings}
-          className="mx-2 flex h-7 w-[184px] shrink-0 items-center gap-2 rounded-control px-2 text-start text-fg-2 transition-colors hover:bg-subtle hover:text-fg-1"
+          className="mx-2 flex h-9 shrink-0 items-center gap-2.5 rounded-control px-2.5 text-start text-fg-2 transition-colors hover:bg-subtle hover:text-fg-1"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
           {t("nav.back")}
@@ -680,7 +680,7 @@ function SettingsDirectory({
       <div
         role="group"
         aria-label={t("nav.settings")}
-        className={cn("flex min-h-0 flex-1 flex-col", collapsed && "mt-2")}
+        className={cn("flex min-h-0 flex-1 flex-col gap-0.5", collapsed && "mt-2")}
       >
         {SETTINGS_ITEMS.map(({ section, icon }) => (
           <NavItem
