@@ -99,7 +99,6 @@
     "windowClose": "Close window"
   },
   "provider": {
-    "add": "Add",
     "connectivityCheck": "Connectivity check",
     "tabProvider": "Provider",
     "tabUniversal": "Universal",
@@ -962,7 +961,7 @@
     "uninstallCommandCopyFailed": "Copy failed. Please select and copy the command manually.",
     "oneClickInstallHint": "Install or upgrade Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code",
     "localEnvCheck": "Local environment check",
-    "updateAllTools": "Update All ({{count}})",
+    "updateAllTools": "Update all",
     "currentVersion": "Current Version",
     "latestVersion": "Latest Version",
     "updateAvailableShort": "Update",
@@ -2371,10 +2370,12 @@
       "tipOff": "Session logs are scanned only when you sync manually"
     },
     "refreshMenu": {
+      "shortLabel": "Scan interval",
       "label": "Scan every {{seconds}}s",
       "seconds": "{{seconds}}s"
     },
     "dataSources": "Data sources",
+    "sourcesShort": "Sources",
     "display": {
       "title": "Display",
       "currency": "Currency",

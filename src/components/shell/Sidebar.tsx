@@ -13,7 +13,6 @@ import {
   Globe,
   History,
   Info,
-  KeyRound,
   LayoutGrid,
   Server,
   Settings,
@@ -218,14 +217,8 @@ function MainDirectory({
   const { moneyShort } = useMoneyFormat();
   const { data: settings } = useSettingsQuery();
   const { hasUpdate } = useUpdate();
-  const {
-    appStatus,
-    todayCost,
-    todayTokens,
-    todayRequests,
-    todayHitRate,
-    authNeedsAttention,
-  } = useSidebarStatus();
+  const { appStatus, todayCost, todayTokens, todayRequests, todayHitRate } =
+    useSidebarStatus();
   const apps = APP_IDS.filter((app) => visibleApps[app]);
   const onAppPage = isAppPage(view);
 
@@ -272,12 +265,6 @@ function MainDirectory({
     { page: "skills", label: "Skills", icon: SkillsIcon },
     { page: "prompts", label: t("nav.prompts"), icon: BookOpen },
     { page: "sessions", label: t("nav.sessions"), icon: History },
-    {
-      page: "auth",
-      label: t("nav.auth"),
-      icon: KeyRound,
-      alert: authNeedsAttention ? t("nav.authNeedsReauth") : undefined,
-    },
     {
       page: "usage",
       label: t("nav.usage"),

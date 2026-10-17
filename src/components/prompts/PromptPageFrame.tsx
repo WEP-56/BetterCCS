@@ -92,23 +92,26 @@ export function PromptPageFrame({
     <>
       <AppPageHeader
         icon={<BookOpen className="h-[18px] w-[18px]" strokeWidth={2} />}
-        title={t("nav.prompts")}
+        label={t("nav.prompts")}
+        groupActionsWithControls
         titleExtra={
           <HelpTip title={help.title}>{renderSegs(help.text)}</HelpTip>
         }
+        toolbar={
+          primary ? (
+            <Button
+              variant="soft"
+              size="compact"
+              disabled={primary.disabled}
+              onClick={primary.onClick}
+            >
+              <Plus className="h-4 w-4" />
+              {primary.label}
+            </Button>
+          ) : null
+        }
         actions={
           <>
-            {primary ? (
-              <Button
-                variant="solid"
-                size="compact"
-                disabled={primary.disabled}
-                onClick={primary.onClick}
-              >
-                <Plus className="h-4 w-4" />
-                {primary.label}
-              </Button>
-            ) : null}
             <DropdownMenu>
               <HoverTip content={t("common.more")}>
                 <DropdownMenuTrigger asChild>

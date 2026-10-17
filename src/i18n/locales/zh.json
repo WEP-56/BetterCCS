@@ -99,7 +99,6 @@
     "windowClose": "关闭窗口"
   },
   "provider": {
-    "add": "添加",
     "connectivityCheck": "检测连通",
     "tabProvider": "供应商",
     "tabUniversal": "统一供应商",
@@ -962,7 +961,7 @@
     "uninstallCommandCopyFailed": "复制失败，请手动选择并复制命令。",
     "oneClickInstallHint": "安装或升级 Claude Code / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code",
     "localEnvCheck": "本地环境检查",
-    "updateAllTools": "全部升级（{{count}}）",
+    "updateAllTools": "全部升级",
     "currentVersion": "当前版本",
     "latestVersion": "最新版本",
     "updateAvailableShort": "可升级",
@@ -2371,10 +2370,12 @@
       "tipOff": "只在手动同步时扫描会话日志"
     },
     "refreshMenu": {
+      "shortLabel": "扫描间隔",
       "label": "每 {{seconds}} 秒扫描",
       "seconds": "{{seconds}} 秒"
     },
     "dataSources": "数据来源",
+    "sourcesShort": "来源",
     "display": {
       "title": "显示",
       "currency": "币种",

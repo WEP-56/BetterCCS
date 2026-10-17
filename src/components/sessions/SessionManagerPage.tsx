@@ -939,7 +939,8 @@ export function SessionManagerPage({
       {!readerSession && (
         <AppPageHeader
           icon={<History className="h-5 w-5" strokeWidth={1.5} />}
-          title={t("nav.sessions", { defaultValue: "会话" })}
+          label={t("nav.sessions", { defaultValue: "会话" })}
+          groupActionsWithControls
           titleExtra={
             <HelpTip
               title={t("sessionManager.helpTitle", {

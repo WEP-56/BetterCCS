@@ -1156,7 +1156,7 @@ function App() {
             onClick={() => openAddProvider(currentModeView)}
           >
             <Plus className="h-4 w-4" />
-            {t("provider.add")}
+            {t("common.add")}
           </Button>
           {(settingsData?.showProviderSearch ?? true) && (
             <HoverTip

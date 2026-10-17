@@ -92,24 +92,12 @@ const ROWS: Row[] = [
 const APP_ROW_GRID =
   "grid grid-cols-[minmax(0,1fr)_168px_var(--apps-actions-width,0px)_56px_28px] items-center gap-x-4";
 
-function formatCheckedAt(timestamp: number, locale: string): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const time = date.toLocaleTimeString(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return date.toDateString() === now.toDateString()
-    ? time
-    : `${date.toLocaleDateString(locale, { month: "numeric", day: "numeric" })} ${time}`;
-}
-
 /**
  * 「应用」页（v7）：每个应用一行 = 安装状态 / 版本 + 安装 / 升级 + 在侧栏显示的开关 + 「⋯」菜单（卸载）。
  * 隐藏一个应用只影响界面（侧栏、MCP / Skills 的列、提示词和会话的下拉），配置照常同步。
  */
 export function AppsPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const tools = useToolManagement();
   const { settings, updateSettings, autoSaveSettings } = useSettings();
   const tableRef = useRef<HTMLDivElement>(null);
@@ -198,27 +186,19 @@ export function AppsPage() {
     ? settledUpdatableCount.current
     : tools.updatableToolNames.length;
 
-  const lastChecked = tools.lastCheckedAt
-    ? t("appsPage.lastChecked", {
-        time: formatCheckedAt(tools.lastCheckedAt, i18n.language),
-      })
-    : t("appsPage.neverChecked");
-
   return (
     <>
       <AppPageHeader
         icon={<LayoutGrid className="h-5 w-5" strokeWidth={1.5} />}
-        title={t("nav.apps")}
+        label={t("nav.apps")}
         titleExtra={
           <HelpTip title={t("appsPage.helpTitle")}>
             {t("appsPage.helpBody")}
           </HelpTip>
         }
-        actions={
+        groupActionsWithControls
+        toolbar={
           <>
-            <span className="whitespace-nowrap text-caption text-fg-3">
-              {lastChecked}
-            </span>
             {(updatableCount > 0 || tools.batchAction) && (
               <Button
                 variant="neutral"
@@ -238,7 +218,7 @@ export function AppsPage() {
                 ) : (
                   <ArrowUpCircle className="h-3.5 w-3.5" />
                 )}
-                {t("settings.updateAllTools", { count: updatableCount })}
+                {t("settings.updateAllTools")}
               </Button>
             )}
             <Button
@@ -269,41 +249,43 @@ export function AppsPage() {
                 </span>
               </span>
             </Button>
-            <DropdownMenu>
-              <HoverTip content={t("common.more")}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="quiet"
-                    size="icon-compact"
-                    aria-label={t("appsPage.moreActions")}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </HoverTip>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  disabled={
-                    tools.isLoadingTools ||
-                    tools.isAnyBusy ||
-                    tools.isDiagnosingAll
-                  }
-                  onSelect={() => void tools.handleDiagnoseAll()}
-                >
-                  {t("settings.toolDiagnose")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setShowCommands(true)}>
-                  {t("appsPage.manualCommands")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-red-500 focus:text-red-500 dark:text-red-400 dark:focus:text-red-400"
-                  onSelect={() => setShowUninstallCommands(true)}
-                >
-                  {t("settings.manualUninstallCommands")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </>
+        }
+        actions={
+          <DropdownMenu>
+            <HoverTip content={t("common.more")}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="quiet"
+                  size="icon-compact"
+                  aria-label={t("appsPage.moreActions")}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </HoverTip>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                disabled={
+                  tools.isLoadingTools ||
+                  tools.isAnyBusy ||
+                  tools.isDiagnosingAll
+                }
+                onSelect={() => void tools.handleDiagnoseAll()}
+              >
+                {t("settings.toolDiagnose")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setShowCommands(true)}>
+                {t("appsPage.manualCommands")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-500 focus:text-red-500 dark:text-red-400 dark:focus:text-red-400"
+                onSelect={() => setShowUninstallCommands(true)}
+              >
+                {t("settings.manualUninstallCommands")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
       />
 
@@ -311,40 +293,23 @@ export function AppsPage() {
         id="main-content"
         className="min-h-0 flex-1 overflow-y-auto scroll-stable"
       >
-        <div ref={tableRef} className="px-6 pb-10 pt-4">
+        <div ref={tableRef} className="px-6 pb-10 pt-3">
+          {/* 看不见的测量块（原来挂在表头上）：操作列始终留出按钮宽度，
+              版本号加载完、按钮冒出来时不会把版本列推开 */}
           <div
-            className={cn(
-              APP_ROW_GRID,
-              "mx-px h-8 px-4 text-caption font-medium text-fg-2",
-            )}
+            data-tool-actions
+            aria-hidden
+            className="invisible grid h-0 w-max [&>*]:col-start-1 [&>*]:row-start-1"
           >
-            <span>{t("appsPage.columnApp")}</span>
-            <span className="text-end">{t("appsPage.columnVersion")}</span>
-            {/* 看不见的「安装 / 升级」按钮只用来量宽：操作列始终留出按钮的位置，
-                版本号加载完或检查到新版本、按钮冒出来时，版本列不会被推开。 */}
-            <div
-              data-tool-actions
-              aria-hidden
-              className="invisible grid w-max justify-self-end [&>*]:col-start-1 [&>*]:row-start-1"
-            >
-              <Button variant="neutral" size="compact" tabIndex={-1}>
-                <Download className="h-3.5 w-3.5" />
-                {t("settings.toolInstall")}
-              </Button>
-              <Button variant="neutral" size="compact" tabIndex={-1}>
-                <ArrowUpCircle className="h-3.5 w-3.5" />
-                {t("settings.toolUpdate")}
-              </Button>
-            </div>
-            <span className="flex items-center justify-end gap-0.5">
-              {t("appsPage.columnVisible")}
-              <HelpTip title={t("appsPage.columnVisible")} align="end">
-                {t("appsPage.visibleHelp")}
-              </HelpTip>
-            </span>
-            <span />
+            <Button variant="neutral" size="compact" tabIndex={-1}>
+              <Download className="h-3.5 w-3.5" />
+              {t("settings.toolInstall")}
+            </Button>
+            <Button variant="neutral" size="compact" tabIndex={-1}>
+              <ArrowUpCircle className="h-3.5 w-3.5" />
+              {t("settings.toolUpdate")}
+            </Button>
           </div>
-
           <div className="divide-y divide-border overflow-hidden rounded-panel border border-border bg-surface">
             {ROWS.map((row) =>
               row.kind === "desktop" ? (

@@ -576,12 +576,23 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
     <>
       <AppPageHeader
         icon={<Server className="h-5 w-5" strokeWidth={1.5} />}
-        title="MCP"
+        label="MCP"
         titleExtra={
           <HelpTip title={t("mcpPage.helpTitle")}>{t("mcpPage.help")}</HelpTip>
         }
-        actions={
+        groupActionsWithControls
+        toolbar={
           <>
+            <Button
+              type="button"
+              variant="soft"
+              size="compact"
+              disabled={controlsDisabled}
+              onClick={openAdd}
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              {t("common.add")}
+            </Button>
             <Button
               type="button"
               variant="quiet"
@@ -590,18 +601,12 @@ const UnifiedMcpPanel: React.FC<UnifiedMcpPanelProps> = ({
               onClick={() => void handleImport()}
             >
               <Download className="h-4 w-4" strokeWidth={2} />
-              {t("mcpPage.importFromApps")}
+              {t("common.import")}
             </Button>
-            <Button
-              type="button"
-              variant="solid"
-              size="compact"
-              disabled={controlsDisabled}
-              onClick={openAdd}
-            >
-              <Plus className="h-4 w-4" strokeWidth={2} />
-              {t("mcpPage.add")}
-            </Button>
+          </>
+        }
+        actions={
+          <>
             <DropdownMenu>
               <HoverTip content={t("common.more")}>
                 <DropdownMenuTrigger asChild>

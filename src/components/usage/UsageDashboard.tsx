@@ -440,22 +440,14 @@ export function UsageDashboard({
     seconds: refreshIntervalMs / 1000,
   });
 
+  // 页头左边三个控件：手动扫描、扫描间隔、数据来源；同步状态作为说明文字缀在最后
   const headerActions = (
     <>
-      {showSyncText && (
-        <span
-          role="status"
-          title={syncTip}
-          className="min-w-0 truncate whitespace-nowrap text-caption tabular-nums text-fg-3"
-        >
-          {syncText}
-        </span>
-      )}
       <HoverTip content={showSyncText ? syncTip : `${syncText} · ${syncTip}`}>
         <Button
           type="button"
           variant="neutral"
-          size="regular"
+          size="compact"
           className="shrink-0 gap-1.5 ps-2.5"
           disabled={syncingSession}
           onClick={() => void runManualSessionSync()}
@@ -475,16 +467,16 @@ export function UsageDashboard({
             <Button
               type="button"
               variant="quiet"
-              size="regular"
+              size="compact"
               className="shrink-0 gap-1 pe-2 ps-2.5 text-fg-2"
               aria-label={`${t("usage.refreshInterval")}: ${refreshLabel}`}
             >
-              {refreshLabel}
+              {t("usage.refreshMenu.shortLabel")}
               <ChevronDown className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            align="end"
+            align="start"
             className={cn(menuContentClass, "min-w-[150px]")}
           >
             {REFRESH_INTERVAL_OPTIONS_MS.map((ms) => (
@@ -503,14 +495,23 @@ export function UsageDashboard({
       <Button
         type="button"
         variant="quiet"
-        size="regular"
+        size="compact"
         className="shrink-0 gap-1.5 ps-2.5 text-fg-2"
         aria-haspopup="dialog"
         onClick={() => setSourcesOpen(true)}
       >
         <Database className="h-3.5 w-3.5" />
-        {t("usage.dataSources")}
+        {t("usage.sourcesShort")}
       </Button>
+      {showSyncText && (
+        <span
+          role="status"
+          title={syncTip}
+          className="min-w-0 truncate whitespace-nowrap text-caption tabular-nums text-fg-3"
+        >
+          {syncText}
+        </span>
+      )}
     </>
   );
 
@@ -891,11 +892,11 @@ export function UsageDashboard({
     <div ref={containerRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
       <AppPageHeader
         icon={<ChartColumn className="h-5 w-5" strokeWidth={1.5} />}
-        title={t("nav.usage")}
+        label={t("nav.usage")}
         titleExtra={
           <HelpTip title={t("nav.usage")}>{t("usage.subtitle")}</HelpTip>
         }
-        actions={headerActions}
+        toolbar={headerActions}
       />
       {filterRow}
       {body}

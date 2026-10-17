@@ -493,7 +493,7 @@ const StandardPromptPanel: React.FC<PromptPanelProps> = ({
           : { title: t("prompts.helpTitle"), text: t("prompts.helpText") }
       }
       primary={{
-        label: t("prompts.add"),
+        label: t("common.add"),
         onClick: handleAdd,
         disabled: controlsDisabled,
       }}

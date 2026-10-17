@@ -902,7 +902,8 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
   const header = (
     <AppPageHeader
       icon={<SkillsIcon size={20} />}
-      title="Skills"
+      label="Skills"
+      groupActionsWithControls
       titleExtra={
         <>
           <HelpTip title={t("skillsPage.helpTitle")}>
@@ -937,35 +938,37 @@ const UnifiedSkillsPanel: React.FC<UnifiedSkillsPanelProps> = ({
           )}
         </>
       }
+      toolbar={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="soft"
+              size="compact"
+              className="pe-2.5"
+              disabled={controlsDisabled}
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              {t("common.add")}
+              <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[220px]">
+            <DropdownMenuItem onSelect={() => setView("discover")}>
+              {t("skillsPage.addMenu.discover")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => void handleInstallFromZip()}>
+              {t("skillsPage.addMenu.zip")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => void handleOpenImport()}>
+              <span className="flex-1">{t("skillsPage.addMenu.import")}</span>
+              {nUnmanaged > 0 && <NeutralBadge>{nUnmanaged}</NeutralBadge>}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
       actions={
         <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="solid"
-                size="compact"
-                className="pe-2.5"
-                disabled={controlsDisabled}
-              >
-                <Plus className="h-4 w-4" strokeWidth={2} />
-                {t("skillsPage.add")}
-                <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[220px]">
-              <DropdownMenuItem onSelect={() => setView("discover")}>
-                {t("skillsPage.addMenu.discover")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => void handleInstallFromZip()}>
-                {t("skillsPage.addMenu.zip")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => void handleOpenImport()}>
-                <span className="flex-1">{t("skillsPage.addMenu.import")}</span>
-                {nUnmanaged > 0 && <NeutralBadge>{nUnmanaged}</NeutralBadge>}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <DropdownMenu>
             <HoverTip content={t("common.more")}>
               <DropdownMenuTrigger asChild>
