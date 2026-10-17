@@ -18,14 +18,12 @@ GEMINI.md
 /.vscode
 vitest-report.json
 nul
-
-# Flatpak build artifacts
-flatpak/cc-switch.deb
-flatpak-build/
-flatpak-repo/
 .worktrees/
 .spec-workflow/
 copilot-api
 .history
 CODEBUDDY.md
 mainWindow.js
+
+# WorkBuddy 本地工作数据
+.workbuddy/
