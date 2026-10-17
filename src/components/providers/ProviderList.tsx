@@ -455,7 +455,8 @@ export function ProviderList({
     />
   );
 
-  // 搜索框放在列表上方第一行的最右端，不盖住卡片、打开时卡片也不下移
+  // 搜索框挂在页头（searchSlot）时，左边那个放大镜是多余的——页头上已经有一个了
+  const searchFieldHosted = searchSlot !== undefined;
   const searchField = (
     <AnimatePresence>
       {isSearchOpen && (
@@ -467,7 +468,9 @@ export function ProviderList({
           transition={{ duration: 0.15, ease: "easeOut" }}
           className="relative flex w-64 min-w-[10rem] shrink items-center"
         >
-          <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-3" />
+          {!searchFieldHosted && (
+            <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-3" />
+          )}
           <Input
             ref={searchInputRef}
             value={searchTerm}
@@ -484,7 +487,10 @@ export function ProviderList({
             })} ${t("provider.searchCloseHint", {
               defaultValue: "Press Esc to close",
             })}`}
-            className={searchTerm ? "pe-[5.5rem] ps-8" : "pe-9 ps-8"}
+            className={cn(
+              searchTerm ? "pe-[5.5rem]" : "pe-9",
+              searchFieldHosted ? "ps-2.5" : "ps-8",
+            )}
           />
           {searchTerm && (
             <Button

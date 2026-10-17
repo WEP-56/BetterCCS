@@ -11,15 +11,20 @@ interface AppPageHeaderProps {
   /** 标题前的可操作元素（二级页的返回按钮）；和 icon 二选一 */
   leading?: ReactNode;
   icon?: ReactNode;
-  title: ReactNode;
+  /** 不传就只有图标 + 副标题（供应商页：加粗大字属于过度强调） */
+  title?: ReactNode;
   /** 应用页用 16px 的名字 + 13px 的页面名；全局页和设置用 18px 的页面标题 */
   variant?: "app" | "page";
-  /** 应用页的页面名（如「供应商」），灰字跟在应用名后面 */
+  /** 应用页的页面名（如「供应商」），灰字跟在应用名后面；没有 title 时它就是这一屏的标题 */
   subtitle?: ReactNode;
   /** 标题后面的「?」、Beta 徽标、计数等 */
   titleExtra?: ReactNode;
+  /** 标题右侧的工具区（主操作、搜索）：贴着标题往左靠，不跟右边的 ⋯ 挤在一起 */
+  toolbar?: ReactNode;
   /** 右侧操作区：主按钮放最后一个、⋯ 放它后面 */
   actions?: ReactNode;
+  /** 让 actions 与窗口按钮挨在一起（⋯ 和 最小化/最大化/关闭 算一组） */
+  groupActionsWithControls?: boolean;
   /** 标题可能很长（如会话阅读页的会话名）：标题占满剩余宽度，放不下就截断 */
   truncateTitle?: boolean;
   className?: string;
@@ -36,11 +41,14 @@ export function AppPageHeader({
   variant = "page",
   subtitle,
   titleExtra,
+  toolbar,
   actions,
+  groupActionsWithControls = false,
   truncateTitle = false,
   className,
 }: AppPageHeaderProps) {
   const windowControls = useContext(WindowControlsContext);
+  const hasTitle = title != null && title !== "";
   return (
     <header
       className={cn(
@@ -71,41 +79,76 @@ export function AppPageHeader({
             {icon}
           </span>
         )}
-        <h1
-          {...DRAG_REGION_ATTR}
-          className={cn(
-            "m-0 whitespace-nowrap",
-            variant === "app" ? "text-title" : "text-page",
-            truncateTitle && "min-w-0 truncate",
-          )}
-        >
-          {title}
-        </h1>
-        {(subtitle || titleExtra) && (
-          <div className="flex items-center gap-1" style={NO_DRAG}>
-            {subtitle && (
-              <span className="whitespace-nowrap text-body text-fg-3">
-                {subtitle}
-              </span>
+        {hasTitle && (
+          <h1
+            {...DRAG_REGION_ATTR}
+            className={cn(
+              "m-0 whitespace-nowrap",
+              variant === "app" ? "text-title" : "text-page",
+              truncateTitle && "min-w-0 truncate",
             )}
+          >
+            {title}
+          </h1>
+        )}
+        {(subtitle || titleExtra) && (
+          <div
+            className={cn("flex items-center gap-1", !hasTitle && "min-w-0")}
+            style={NO_DRAG}
+          >
+            {subtitle &&
+              (hasTitle ? (
+                <span className="whitespace-nowrap text-body text-fg-3">
+                  {subtitle}
+                </span>
+              ) : (
+                // 没有大标题时，副标题就是这一屏的标题：13px 常规字重、第二级灰
+                <h1
+                  className={cn(
+                    "m-0 whitespace-nowrap text-body font-medium text-fg-2",
+                    truncateTitle && "min-w-0 truncate",
+                  )}
+                >
+                  {subtitle}
+                </h1>
+              ))}
             {titleExtra}
           </div>
         )}
       </div>
-      {!truncateTitle && <div {...DRAG_REGION_ATTR} className="flex-1" />}
-      {actions && (
+
+      {toolbar && (
         <div
-          className="flex min-w-0 shrink items-center justify-end gap-2"
+          className="flex min-w-0 shrink items-center justify-start gap-2"
           style={NO_DRAG}
         >
-          {actions}
+          {toolbar}
         </div>
       )}
-      {windowControls && (
-        <div className="flex shrink-0 items-center gap-1" style={NO_DRAG}>
-          {windowControls}
-        </div>
+
+      {!truncateTitle && (
+        <div {...DRAG_REGION_ATTR} className="flex-1" />
       )}
+
+      <div
+        className={cn(
+          "flex min-w-0 shrink-0 items-center justify-end",
+          // 不合并时和以前一样留 20px，别的页面观感不变
+          groupActionsWithControls && windowControls ? "gap-1" : "gap-5",
+        )}
+        style={NO_DRAG}
+      >
+        {actions && (
+          <div className="flex min-w-0 shrink items-center justify-end gap-2">
+            {actions}
+          </div>
+        )}
+        {windowControls && (
+          <div className="flex shrink-0 items-center gap-1">
+            {windowControls}
+          </div>
+        )}
+      </div>
     </header>
   );
 }

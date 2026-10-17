@@ -76,6 +76,8 @@ interface SwitchModePanelProps extends ListCallbacks {
   onNeedsRouteHandled?: () => void;
   /** 正在看的那格变了：新增 / 编辑供应商按它选表单布局。需要是稳定的回调 */
   onViewChange?: (app: ModeAppId, view: AppMode) => void;
+  /** 页头里搜索输入框的挂载点（ProviderList 用 portal 画进去） */
+  searchSlot?: HTMLDivElement | null;
 }
 
 /** Gemini CLI、Grok Build、Claude Desktop 没有聚合模式（Q6）：那一格隐藏，前两格位置不变。 */
@@ -99,6 +101,7 @@ export function SwitchModePanel({
   needsRouteRequest,
   onNeedsRouteHandled,
   onViewChange,
+  searchSlot,
   ...listCallbacks
 }: SwitchModePanelProps) {
   const { t } = useTranslation();
@@ -116,7 +119,6 @@ export function SwitchModePanel({
   // 旧配置仍处于路由模式时，下面会用一条通知条提示并给出「回到直连」
   // 断言成 AppMode：下面仍有按 view 分支的死代码，阶段二删后端时一起清
   const view = "direct" as AppMode;
-  const [searchSlot, setSearchSlot] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     onViewChange?.(app, view);
   }, [app, view, onViewChange]);
@@ -471,17 +473,10 @@ export function SwitchModePanel({
 
   return (
     <>
-      {/* 模式页签已下线：这里只留搜索框的挂载点，不画任何分隔或状态行 */}
-      <div className="flex min-h-0 shrink-0 items-center justify-end gap-2 px-6 empty:hidden">
-        <div
-          ref={setSearchSlot}
-          className="flex min-w-0 shrink items-center empty:hidden"
-        />
-      </div>
       <div
         ref={scrollRef}
         id="main-content"
-        className="min-h-0 flex-1 overflow-y-auto scroll-stable overflow-x-hidden px-6 pb-12 pt-2"
+        className="min-h-0 flex-1 overflow-y-auto scroll-stable overflow-x-hidden px-6 pb-12 pt-3"
       >
         {notices.length > 0 && (
           <div role="status" className="mb-3 flex flex-col gap-2">

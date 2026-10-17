@@ -75,7 +75,6 @@ import {
 } from "@/components/shell/AppPageHeader";
 import { WindowControls } from "@/components/shell/WindowControls";
 import { APP_DISPLAY_NAME, AppGlyph } from "@/components/shell/AppGlyph";
-import { ProfileSwitcher } from "@/components/profiles/ProfileSwitcher";
 import { ProviderList } from "@/components/providers/ProviderList";
 import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
 import {
@@ -171,6 +170,10 @@ function App() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   // 供应商搜索面板：页头按钮和 ⌘F 都能打开；换应用或离开供应商页就收起
   const [providerSearchOpen, setProviderSearchOpen] = useState(false);
+  // 搜索输入框的挂载点：ProviderList 用 portal 把输入框画进页头，紧挨搜索图标右侧，
+  // 这样打开搜索时下方的供应商列表不会被顶下去
+  const [providerSearchSlot, setProviderSearchSlot] =
+    useState<HTMLDivElement | null>(null);
   useEffect(() => {
     setProviderSearchOpen(false);
   }, [activeApp, currentView]);
@@ -1137,68 +1140,83 @@ function App() {
           ? t("appPage.memory")
           : t("appPage.providers");
 
-  const renderAppPageHeader = () => (
+  // 供应商页的页头：只有图标 + 「供应商」，主操作靠左跟标题站一队，⋯ 让到右边和
+  // 窗口按钮挨着。加粗大字的应用名属于过度强调，去掉之后页头 Quiet 很多。
+  const renderProvidersHeader = () => (
     <AppPageHeader
       variant="app"
       icon={<AppGlyph app={activeApp} size={20} badgeClassName="bg-app" />}
-      title={APP_DISPLAY_NAME[activeApp]}
-      subtitle={
-        activeApp === "openclaw" || activeApp === "hermes"
-          ? undefined
-          : appPageName
-      }
-      actions={
+      subtitle={appPageName}
+      groupActionsWithControls
+      toolbar={
         <>
-          {currentView === "providers" &&
-            activeApp !== "mcode" &&
-            (settingsData?.showProfileSwitcher ?? false) && (
-              <ProfileSwitcher activeApp={activeApp} />
-            )}
-          {activeApp === "hermes" && (
-            <Button
-              variant="quiet"
-              size="compact"
-              onClick={() => void openHermesWebUI()}
+          <Button
+            variant="solid"
+            size="compact"
+            onClick={() => openAddProvider(currentModeView)}
+          >
+            <Plus className="h-4 w-4" />
+            {t("provider.addProvider")}
+          </Button>
+          {(settingsData?.showProviderSearch ?? true) && (
+            <HoverTip
+              content={t("provider.searchButtonTip", {
+                shortcut: isMac() ? "⌘F" : "Ctrl+F",
+              })}
             >
-              {t("appPage.webUi")}
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {currentView === "providers" &&
-            (settingsData?.showProviderSearch ?? true) && (
-              <HoverTip
-                content={t("provider.searchButtonTip", {
-                  shortcut: isMac() ? "⌘F" : "Ctrl+F",
-                })}
+              <Button
+                variant="quiet"
+                size="icon-compact"
+                aria-label={t("provider.searchAriaLabel")}
+                aria-pressed={providerSearchOpen}
+                onClick={() => setProviderSearchOpen((open) => !open)}
               >
-                <Button
-                  variant="quiet"
-                  size="icon-compact"
-                  className="h-7 w-7"
-                  aria-label={t("provider.searchAriaLabel")}
-                  aria-pressed={providerSearchOpen}
-                  onClick={() => setProviderSearchOpen((open) => !open)}
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              </HoverTip>
-            )}
-          {currentView === "providers" && (
-            <Button
-              variant="solid"
-              size="compact"
-              onClick={() => openAddProvider(currentModeView)}
-            >
-              <Plus className="h-4 w-4" />
-              {t("provider.addProvider")}
-            </Button>
+                <Search className="h-4 w-4" />
+              </Button>
+            </HoverTip>
           )}
-          {currentView === "hermesMemory" && <HermesMemorySaveButton />}
-          {appMenu}
+          {/* ProviderList 把搜索输入框 portal 到这里，打开即贴着图标右侧出现 */}
+          <div
+            ref={setProviderSearchSlot}
+            className="flex min-w-0 shrink items-center empty:hidden"
+          />
         </>
       }
+      actions={appMenu}
     />
   );
+
+  const renderAppPageHeader = () =>
+    currentView === "providers" ? (
+      renderProvidersHeader()
+    ) : (
+      <AppPageHeader
+        variant="app"
+        icon={<AppGlyph app={activeApp} size={20} badgeClassName="bg-app" />}
+        title={APP_DISPLAY_NAME[activeApp]}
+        subtitle={
+          activeApp === "openclaw" || activeApp === "hermes"
+            ? undefined
+            : appPageName
+        }
+        actions={
+          <>
+            {activeApp === "hermes" && (
+              <Button
+                variant="quiet"
+                size="compact"
+                onClick={() => void openHermesWebUI()}
+              >
+                {t("appPage.webUi")}
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {currentView === "hermesMemory" && <HermesMemorySaveButton />}
+            {appMenu}
+          </>
+        }
+      />
+    );
 
   // OpenClaw / Hermes 没有模式 tab，那一行放它们自己的页面导航。
   // 换整块内容的是页面导航，用下划线页签；分段控件只留给模式和页内筛选。
@@ -1275,6 +1293,7 @@ function App() {
           }
           onNeedsRouteHandled={() => setTrayNeedsRoute(null)}
           onViewChange={handleProviderModeViewChange}
+          searchSlot={providerSearchSlot}
           startupFailure={startupFailure}
           onDismissStartupFailure={() =>
             setStartupFailures((list) =>
@@ -1298,6 +1317,7 @@ function App() {
             providers={providers}
             currentProviderId={currentProviderId}
             appId={activeApp}
+            searchSlot={providerSearchSlot}
             isLoading={isLoading}
             onSwitch={(provider) =>
               void (activeApp === "pi"
