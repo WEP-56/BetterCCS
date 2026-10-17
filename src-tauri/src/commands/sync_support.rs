@@ -20,14 +20,6 @@ pub(crate) fn run_post_import_sync(app_state: &AppState) -> Result<(), AppError>
     if let Err(error) = settings::reload_settings() {
         failures.push(format!("settings cache: {error}"));
     }
-
-    match app_state.db.get_log_config() {
-        Ok(log_config) => log::set_max_level(log_config.to_level_filter()),
-        Err(error) => {
-            log::set_max_level(log::LevelFilter::Info);
-            failures.push(format!("runtime log level: {error}"));
-        }
-    }
     app_state.usage_cache.invalidate_all();
 
     if failures.is_empty() {

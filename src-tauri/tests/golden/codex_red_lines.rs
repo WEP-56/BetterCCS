@@ -789,13 +789,7 @@ fn auth_cleanup_failure_is_a_warning() {
 }
 
 async fn use_ephemeral_proxy_port(state: &AppState) {
-    let mut config = state.db.get_proxy_config().await.expect("proxy config");
-    config.listen_port = 0;
-    state
-        .db
-        .update_proxy_config(config)
-        .await
-        .expect("use ephemeral proxy port");
+    state.db.set_proxy_listen_port_sync(0);
 }
 
 const NEW_LOGIN: &str = r#"{"auth_mode":"chatgpt","OPENAI_API_KEY":null,"tokens":{"id_token":"id-2","access_token":"access-2","refresh_token":"refresh-2","account_id":"account-2"},"last_refresh":"2026-09-20T00:00:00Z"}"#;

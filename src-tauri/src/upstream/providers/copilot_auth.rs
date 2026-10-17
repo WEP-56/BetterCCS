@@ -24,7 +24,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
-use crate::upstream::error::ProxyError;
 
 /// GitHub OAuth 客户端 ID（VS Code）- 用于 github.com
 const GITHUB_CLIENT_ID: &str = "Iv1.b507a08c87ecfe98";
@@ -142,69 +141,6 @@ pub const COPILOT_USER_AGENT: &str = "GitHubCopilotChat/0.38.2";
 pub const COPILOT_API_VERSION: &str = "2025-10-01";
 pub const COPILOT_INTEGRATION_ID: &str = "vscode-chat";
 
-/// Build the Copilot request identity shared by every proxy adapter.
-///
-/// The forwarder adds the session-derived interaction ID separately because
-/// it is not available at the provider-adapter seam.
-pub fn build_copilot_request_headers(
-    token: &str,
-) -> Result<Vec<(http::HeaderName, http::HeaderValue)>, ProxyError> {
-    use super::adapter::auth_header_value;
-
-    let mut bearer = String::from("Bearer ");
-    bearer.push_str(token);
-    let request_id = uuid::Uuid::new_v4().to_string();
-    Ok(vec![
-        (
-            http::HeaderName::from_static("authorization"),
-            auth_header_value(&bearer)?,
-        ),
-        (
-            http::HeaderName::from_static("editor-version"),
-            http::HeaderValue::from_static(COPILOT_EDITOR_VERSION),
-        ),
-        (
-            http::HeaderName::from_static("editor-plugin-version"),
-            http::HeaderValue::from_static(COPILOT_PLUGIN_VERSION),
-        ),
-        (
-            http::HeaderName::from_static("copilot-integration-id"),
-            http::HeaderValue::from_static(COPILOT_INTEGRATION_ID),
-        ),
-        (
-            http::HeaderName::from_static("user-agent"),
-            http::HeaderValue::from_static(COPILOT_USER_AGENT),
-        ),
-        (
-            http::HeaderName::from_static("x-github-api-version"),
-            http::HeaderValue::from_static(COPILOT_API_VERSION),
-        ),
-        (
-            http::HeaderName::from_static("openai-intent"),
-            http::HeaderValue::from_static("conversation-agent"),
-        ),
-        (
-            http::HeaderName::from_static("x-initiator"),
-            http::HeaderValue::from_static("user"),
-        ),
-        (
-            http::HeaderName::from_static("x-interaction-type"),
-            http::HeaderValue::from_static("conversation-agent"),
-        ),
-        (
-            http::HeaderName::from_static("x-vscode-user-agent-library-version"),
-            http::HeaderValue::from_static("electron-fetch"),
-        ),
-        (
-            http::HeaderName::from_static("x-request-id"),
-            auth_header_value(&request_id)?,
-        ),
-        (
-            http::HeaderName::from_static("x-agent-task-id"),
-            auth_header_value(&request_id)?,
-        ),
-    ])
-}
 
 /// Copilot 使用量响应
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1799,32 +1735,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn shared_request_headers_include_copilot_identity() {
-        let headers = build_copilot_request_headers("test-token").unwrap();
-        let headers = headers.into_iter().collect::<http::HeaderMap>();
-
-        assert_eq!(
-            headers
-                .get(http::header::AUTHORIZATION)
-                .and_then(|value| value.to_str().ok()),
-            Some("Bearer test-token")
-        );
-        assert_eq!(
-            headers
-                .get("editor-version")
-                .and_then(|value| value.to_str().ok()),
-            Some(COPILOT_EDITOR_VERSION)
-        );
-        assert_eq!(
-            headers
-                .get("copilot-integration-id")
-                .and_then(|value| value.to_str().ok()),
-            Some(COPILOT_INTEGRATION_ID)
-        );
-        assert!(headers.contains_key("x-request-id"));
-        assert_eq!(headers.get("x-request-id"), headers.get("x-agent-task-id"));
-    }
 
     #[test]
     fn test_copilot_token_expiry() {

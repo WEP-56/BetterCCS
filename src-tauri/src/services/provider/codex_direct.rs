@@ -69,11 +69,8 @@ fn managed_account(provider: &Provider) -> Option<String> {
 /// 本地代理给 Codex 的地址（带 `/v1`），不需要代理在运行：官方直连时写休眠表用。
 pub(crate) fn configured_proxy_base_url(db: &Database) -> String {
     let (address, port) = db.get_proxy_client_endpoint_sync();
-    let port = if port == 0 {
-        crate::upstream::types::ProxyConfig::default().listen_port
-    } else {
-        port
-    };
+    // 端口 0 是「系统分配」，旧版本用默认端口写进客户端文件。
+    let port = if port == 0 { 15721 } else { port };
     format!(
         "{}/v1",
         crate::mode::legacy::origin(&address, port)

@@ -627,22 +627,9 @@ pub fn run() {
                 }
             };
 
-            // 数据库可用后立即应用持久化日志级别，避免后续服务初始化
-            // 继续使用启动阶段的 Info 回退。损坏配置显式 fail-closed 到 Info。
-            match db.get_log_config() {
-                Ok(log_config) => {
-                    log::set_max_level(log_config.to_level_filter());
-                    log::info!(
-                        "已加载日志配置: enabled={}, level={}",
-                        log_config.enabled,
-                        log_config.level
-                    );
-                }
-                Err(e) => {
-                    log::set_max_level(log::LevelFilter::Info);
-                    log::warn!("读取日志配置失败，已回退到 info: {e}");
-                }
-            }
+            // 本地路由时代可以在界面上调日志级别；那套配置跟着路由一起下线了，
+            // 这里固定 Info，和启动阶段的回退一致。
+            log::set_max_level(log::LevelFilter::Info);
 
             // 如果有预加载的配置，执行迁移
             if let Some(config) = migration_config {
@@ -1460,14 +1447,6 @@ pub fn run() {
             commands::set_codex_session_compression,
             commands::get_codex_sessions_disk_usage,
             commands::restore_codex_unified_history,
-            commands::get_rectifier_config,
-            commands::set_rectifier_config,
-            commands::get_optimizer_config,
-            commands::set_optimizer_config,
-            commands::get_copilot_optimizer_config,
-            commands::set_copilot_optimizer_config,
-            commands::get_log_config,
-            commands::set_log_config,
             commands::restart_app,
             commands::install_update_and_restart,
             commands::check_app_update_available,

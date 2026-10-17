@@ -10,11 +10,10 @@
 //! 本检查刻意不验证鉴权或模型，因此不会被第三方供应商的鉴权拦截 / 模型校验
 //! 误判为"不可用"。代价是它无法告诉你鉴权对不对、模型存不存在。
 //!
-//! ## 与故障转移的关系（重要不变量）
+//! ## 定位
 //!
-//! 连通性检查 **绝不** 触碰故障转移熔断器：一个返回 403/401 的供应商在本检查里
-//! 算"可达"，但它对真实流量是坏的。熔断器只由 `proxy/forwarder.rs` 转发真实流量
-//! 的成败驱动（被动）。两者职责分离——可达性回答"能不能到"，真实流量回答"能不能用"。
+//! 本检查只回答"能不能到"，不回答"鉴权对不对、模型存不存在"。一个返回 403/401
+//! 的供应商在这里算"可达"，所以它不能用来判断这家能不能用。
 
 use reqwest::header::HeaderValue;
 use reqwest::Client;
@@ -24,7 +23,6 @@ use std::time::Instant;
 use crate::app_config::AppType;
 use crate::error::AppError;
 use crate::provider::Provider;
-use crate::upstream::providers::{get_adapter, ClaudeAdapter, ProviderAdapter};
 
 /// 健康状态枚举
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -174,19 +172,46 @@ impl StreamCheckService {
             AppType::OpenClaw => Self::extract_openclaw_base_url(provider),
             AppType::Hermes => Self::extract_hermes_base_url(provider),
             AppType::Pi => crate::pi_config::provider_base_url(&provider.settings_config),
-            AppType::ClaudeDesktop => ClaudeAdapter::new()
-                .extract_base_url(provider)
-                .map_err(|e| AppError::Message(format!("Failed to extract base_url: {e}"))),
-            _ => get_adapter(app_type)
-                .ok_or_else(|| {
-                    AppError::InvalidInput(format!(
-                        "{} does not support proxy adapters",
-                        app_type.as_str()
-                    ))
-                })?
-                .extract_base_url(provider)
-                .map_err(|e| AppError::Message(format!("Failed to extract base_url: {e}"))),
+            _ => Ok(Self::configured_base_url(app_type, provider).ok_or_else(|| {
+                AppError::Message(format!(
+                    "{} 的供应商配置里没有 base_url",
+                    app_type.as_str()
+                ))
+            })?),
         }
+    }
+
+    /// 供应商配置里写的 base_url：Claude / Claude Desktop / Gemini 在 `env` 里，Codex 系在
+    /// `config` 的 TOML 里，其余看顶层的 `base_url` / `baseUrl` / `baseURL`。
+    fn configured_base_url(app_type: &AppType, provider: &Provider) -> Option<String> {
+        let config = &provider.settings_config;
+        let non_empty = |value: Option<&str>| {
+            value
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(str::to_string)
+        };
+        let setting = |key: &str| non_empty(config.get(key).and_then(|v| v.as_str()));
+        let env = |key: &str| {
+            non_empty(
+                config
+                    .get("env")
+                    .and_then(|env| env.get(key))
+                    .and_then(|v| v.as_str()),
+            )
+        };
+
+        match app_type {
+            AppType::Claude | AppType::ClaudeDesktop => env("ANTHROPIC_BASE_URL"),
+            AppType::Gemini => env("GOOGLE_GEMINI_BASE_URL"),
+            _ => None,
+        }
+        .or_else(|| setting("base_url"))
+        .or_else(|| setting("baseUrl"))
+        .or_else(|| setting("baseURL"))
+        .or_else(|| {
+            setting("config").and_then(|text| crate::codex_config::extract_codex_base_url(&text))
+        })
     }
 
     /// 轻量可达性探测：GET `base_url`，收到任意 HTTP 响应即可达。

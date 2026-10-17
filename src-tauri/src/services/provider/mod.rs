@@ -160,9 +160,6 @@ mod tests {
         AuthBinding, AuthBindingSource, ClaudeModelConfig, ProviderMeta, UniversalProvider,
         UsageScript,
     };
-    #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
-    use crate::provider::{ClaudeDesktopMode, ClaudeDesktopModelRoute};
-    use crate::upstream::types::ProxyConfig;
     use crate::store::AppState;
     use serde_json::json;
     use serial_test::serial;
