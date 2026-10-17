@@ -69,8 +69,8 @@ pub use services::{
     profile::{ProfilePayload, ProfileScope, ProfileService},
     provider::{reapply_current_codex_official_live, EditorSave, EditorView},
     skill::{migrate_skills_to_ssot, ImportSkillSelection},
-    ConfigService, EndpointLatency, McpService, PromptService, ProviderService, ProxyService,
-    SkillService, SpeedtestService,
+    ConfigService, EndpointLatency, McpService, PromptService, ProviderService, SkillService,
+    SpeedtestService,
 };
 pub use settings::{update_settings, AppSettings};
 pub use store::AppState;
@@ -669,9 +669,6 @@ pub fn run() {
             }
 
             let app_state = AppState::new(db);
-
-            // 设置 AppHandle 用于代理故障转移时的 UI 更新
-            app_state.proxy_service.set_app_handle(app.handle().clone());
 
             // 补完上次崩溃时写到一半的客户端文件（写前意图在 ~/.cc-switch/live-state.json），
             // 要在任何写客户端文件的启动步骤之前。
@@ -1283,15 +1280,9 @@ pub fn run() {
 
                 initialize_common_config_snippets(&state);
 
-                // 定下各应用的直连 / 代理模式（处理旧版遗留的接管状态），再把代理模式的
-                // 应用接上。要排在通用配置片段的自动提取之后：它读的是直连的 live。
-                crate::mode::controller::startup(&state).await;
-                // 启动流程走完：托盘这时才开始报「路由服务没在运行」，并记下退回直连的应用。
-                crate::tray::mark_startup_settled(&app_handle);
-                // Codex 官方做路由、发布了 Stack 模型时，官方模型列表过期就在后台刷新。
-                crate::services::provider::codex_official_models::start_background_checks(
-                    state.inner().clone(),
-                );
+                // 把旧版本留下的本地路由接管态写回直连。要排在通用配置片段的自动提取之后：
+                // 它读的是直连的 live。
+                crate::mode::apply::startup(&state).await;
 
                 // Periodic backup check (on startup)
                 if let Err(e) = state.db.periodic_backup_if_needed() {
@@ -1629,52 +1620,12 @@ pub fn run() {
             // Auto launch
             commands::set_auto_launch,
             commands::get_auto_launch_status,
-            // Proxy server management
-            commands::start_proxy_server,
-            commands::stop_proxy_server,
-            commands::stop_proxy_with_restore,
-            commands::get_proxy_takeover_status,
-            commands::set_proxy_takeover_for_app,
-            commands::get_app_mode,
-            commands::set_proxy_route,
-            commands::take_startup_attach_failures,
-            tray::take_tray_navigation,
-            tray::tray_app_page_seen,
-            commands::exit_proxy_apps_in_mode,
-            commands::get_direct_provider,
-            commands::get_proxy_status,
-            commands::get_proxy_config,
-            commands::update_proxy_config,
-            // Global & Per-App Config
-            commands::get_global_proxy_config,
-            commands::update_global_proxy_config,
-            commands::get_proxy_client_host,
-            commands::set_proxy_client_host,
-            commands::get_proxy_config_for_app,
-            commands::update_proxy_config_for_app,
+            // Settings
             commands::get_pricing_model_source,
             commands::set_pricing_model_source,
-            commands::is_proxy_running,
-            commands::is_live_takeover_active,
-            commands::switch_proxy_provider,
-            commands::get_proxy_stack,
-            commands::set_proxy_stack_member,
-            commands::adopt_codex_stack_catalog,
-            commands::restart_codex_app_server_daemon,
-            commands::acknowledge_codex_stale_clients,
-            // Proxy failover commands
-            commands::get_provider_health,
-            commands::reset_circuit_breaker,
-            commands::get_circuit_breaker_config,
-            commands::update_circuit_breaker_config,
-            commands::get_circuit_breaker_stats,
-            // Failover queue management
-            commands::get_failover_queue,
-            commands::get_available_providers_for_failover,
-            commands::add_to_failover_queue,
-            commands::remove_from_failover_queue,
-            commands::get_auto_failover_enabled,
-            commands::set_auto_failover_enabled,
+            // Tray
+            tray::take_tray_navigation,
+            tray::tray_app_page_seen,
             // Usage statistics
             commands::get_usage_summary,
             commands::get_session_usage_summary,
@@ -1923,14 +1874,12 @@ pub fn run() {
 // 应用退出清理
 // ============================================================
 
-/// 应用退出前的清理工作
+/// 应用退出前的清理工作。
 ///
-/// 把接上代理的客户端都指回直连（模式和代理路由保留，下次启动再接上），再停止代理。
-/// 客户端不能一直指着代理：开机自启默认关闭，CC Switch 一关客户端就连不上了。
+/// 客户端文件本身就是直连配置，退出时没有需要收回的东西。
 pub async fn cleanup_before_exit(app_handle: &tauri::AppHandle) {
-    if let Some(state) = app_handle.try_state::<store::AppState>() {
-        crate::mode::controller::detach_all(state.inner()).await;
-        log::info!("退出清理完成：客户端已指回直连，代理已停止");
+    if app_handle.try_state::<store::AppState>().is_some() {
+        log::info!("退出清理完成");
     }
 }
 
@@ -1991,7 +1940,7 @@ fn initialize_common_config_snippets(state: &store::AppState) {
         {
             continue;
         }
-        if state.proxy_service.live_has_proxy_placeholder(&app_type) {
+        if crate::mode::legacy::live_taken_over(&state.db, &app_type) {
             continue;
         }
 

@@ -40,7 +40,7 @@ use crate::live::project::codex::{
     without_row_catalog, CodexConfigPatch, CodexProjection, KnownTable, Route, RouteAuth,
     RouteWrite, RowInput, ROUTE_ID, WEB_SEARCH_DISABLED,
 };
-use crate::mode::contract::CONTRACT_VERSION;
+use crate::mode::state::CONTRACT_VERSION;
 use crate::mode::operation::{AppWrite, FileChange, OperationReport};
 use crate::mode::stack::Member;
 use crate::mode::state::{Contract, PendingTarget};
@@ -79,7 +79,7 @@ pub(crate) fn configured_proxy_base_url(db: &Database) -> String {
     };
     format!(
         "{}/v1",
-        crate::services::proxy::proxy_origin(&address, port)
+        crate::mode::legacy::origin(&address, port)
     )
 }
 
@@ -94,7 +94,7 @@ pub(crate) fn routes_official_to_proxy(db: &Database, config_text: &str) -> bool
 /// `url`（去掉末尾 `/`）是不是本地代理给 Codex 的地址。端口配成 0 时代理用系统分配的
 /// 端口，只核对主机和路径。
 fn is_proxy_base_url(url: &str, address: &str, port: u16) -> bool {
-    let origin = crate::services::proxy::proxy_origin(address, port);
+    let origin = crate::mode::legacy::origin(address, port);
     if port != 0 {
         return url == format!("{origin}/v1");
     }

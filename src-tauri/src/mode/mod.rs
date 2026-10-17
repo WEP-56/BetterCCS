@@ -1,9 +1,9 @@
-//! 客户端文件的设备本地状态（`live-state.json`）、直连 / 代理两种模式，以及多文件操作
-//! 的写前意图和崩溃恢复。
+//! 客户端配置文件的写入、设备本地状态（`live-state.json`）、写前意图和崩溃恢复。
 
-pub mod contract;
-pub mod controller;
+pub mod apply;
 pub mod current;
+pub mod legacy;
 pub mod operation;
 pub mod stack;
 pub mod state;
+pub mod switch_lock;

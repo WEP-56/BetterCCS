@@ -1,7 +1,6 @@
-//! Per-app switch lock
+//! 客户端文件的写入锁
 //!
-//! 确保同一应用同时只有一个切换、进入 / 退出代理的操作在执行，防止并发操作导致
-//! 指针、代理路由和客户端文件不一致。
+//! 同一应用同时只允许一个操作在写它的客户端配置文件，否则指针、写入记录和文件内容会互相对不上。
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -20,9 +19,9 @@ impl SwitchLockManager {
         Self::default()
     }
 
-    /// 获取指定应用的切换锁。
+    /// 获取指定应用的写入锁。
     ///
-    /// 返回 `OwnedMutexGuard`，持有期间同一 `app_type` 的其他切换会排队等待。
+    /// 返回 `OwnedMutexGuard`，持有期间同一 `app_type` 的其他写入会排队等待。
     pub async fn lock_for_app(&self, app_type: &str) -> OwnedMutexGuard<()> {
         let lock = {
             let locks = self.locks.read().await;

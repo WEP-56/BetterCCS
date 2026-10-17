@@ -56,7 +56,9 @@ pub enum Mode {
     Proxy,
 }
 
-/// 进入代理时写进客户端文件的契约。
+pub const CONTRACT_VERSION: u32 = 1;
+
+/// 本地路由时代写进客户端文件的契约。只用于读旧状态、把它清掉。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Contract {
     pub version: u32,

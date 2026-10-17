@@ -772,13 +772,6 @@ pub(crate) fn sync_live_for_provider_respecting_mode(
     provider: &Provider,
     prev: Option<&Provider>,
 ) -> Result<LiveSyncOutcome, AppError> {
-    if crate::mode::current::is_proxy(app_type) {
-        futures::executor::block_on(crate::mode::controller::resync_saved_row_locked(
-            state, app_type, provider,
-        ))
-        .map_err(AppError::Message)?;
-        return Ok(LiveSyncOutcome::ProxyMode);
-    }
     if matches!(app_type, AppType::Claude) {
         super::claude_direct::reapply(state.db.as_ref(), prev.or(Some(provider)), provider)?;
     } else if matches!(app_type, AppType::GrokBuild) {
@@ -796,7 +789,7 @@ pub(crate) fn sync_current_provider_for_app_respecting_mode(
     state: &AppState,
     app_type: &AppType,
 ) -> Result<Option<LiveSyncOutcome>, AppError> {
-    let _switch_guard = crate::mode::controller::lock_settled_blocking(state, app_type)?;
+    let _switch_guard = crate::mode::apply::lock_settled_blocking(state, app_type)?;
     let current_id = match crate::mode::current::provider_for(
         &state.db,
         app_type,
@@ -1007,15 +1000,13 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
         return Ok(false);
     }
 
-    // 拒绝把"代理模式下的 Live"导入为供应商：代理模式下 Live 里只有
-    // PROXY_MANAGED 占位符和本地代理地址，不是用户的真实配置。一旦导入，
-    // 它会成为直连指针（SSOT），退出代理时会把占位符当真实配置写回 Live。
-    // 典型触发场景：代理模式下切换 app_config_dir 并重启，新数据库首启导入。
-    if state.proxy_service.live_has_proxy_placeholder(&app_type) {
+    // 拒绝把本地路由时代的 Live 导入为供应商：那时候 Live 里只有占位符和本地端口，
+    // 不是用户的真实配置。一旦导入，它会成为直连指针，之后又把占位符当真实配置写回。
+    if crate::mode::legacy::live_taken_over(&state.db, &app_type) {
         return Err(AppError::localized(
             "provider.import.live_taken_over",
-            "Live 配置当前处于代理接管状态（包含占位符），不能导入为供应商。请先关闭代理接管或恢复 Live 配置后重试。",
-            "The live config is currently taken over by the proxy (contains placeholders) and cannot be imported as a provider. Disable proxy takeover or restore the live config first.",
+            "Live 配置还指着已下线的本地路由（包含占位符），不能导入为供应商。请先恢复 Live 配置或重启一次让 CC Switch 把它写回直连。",
+            "The live config still points at the removed local router (contains placeholders) and cannot be imported as a provider. Restore the live config, or restart CC Switch so it writes direct config back.",
         ));
     }
 

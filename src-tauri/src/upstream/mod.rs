@@ -1,6 +1,7 @@
-//! 代理服务器模块
+//! 上游协议的实现细节：各供应商的协议格式、请求改写、用量解析，以及出站 HTTP 客户端。
 //!
-//! 提供本地HTTP代理服务，支持多Provider故障转移和请求透传
+//! 本地路由服务已经下线，这里剩下的都是直连时用得上的东西（把供应商行写成客户端的配置、
+//! OAuth 账号管理、用量统计）。
 
 pub mod body_filter;
 pub mod cache_injector;
@@ -9,12 +10,7 @@ pub(crate) mod content_encoding;
 pub mod copilot_optimizer;
 pub mod error;
 pub mod error_mapper;
-pub(crate) mod failover_switch;
-mod forwarder;
 pub mod gemini_url;
-pub mod handler_config;
-pub mod handler_context;
-mod handlers;
 pub mod http_client;
 pub mod hyper_client;
 pub(crate) mod json_canonical;
@@ -22,13 +18,9 @@ pub mod log_codes;
 pub mod media_sanitizer;
 pub mod model_mapper;
 pub mod opaque_state_rectifier;
-pub mod provider_router;
 pub mod providers;
-pub mod response_processor;
-pub(crate) mod server;
 pub mod session;
 pub(crate) mod sse;
-pub(crate) mod switch_lock;
 pub mod thinking_budget_rectifier;
 pub mod thinking_optimizer;
 pub mod thinking_rectifier;
@@ -43,8 +35,6 @@ pub use circuit_breaker::{
 };
 #[allow(unused_imports)]
 pub use error::ProxyError;
-#[allow(unused_imports)]
-pub use provider_router::ProviderRouter;
 #[allow(unused_imports)]
 pub use session::{extract_session_id, SessionIdResult, SessionIdSource};
 #[allow(unused_imports)]

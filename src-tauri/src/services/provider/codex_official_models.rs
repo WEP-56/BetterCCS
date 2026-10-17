@@ -741,18 +741,13 @@ pub(crate) fn catch_up_after_fallback(login: &OfficialLogin) {
     }
 }
 
-/// 切换时发现条目过期：后台刷新，列表变了就重写 Codex 的客户端文件。
+/// 切换时发现条目过期：后台刷新缓存，下次切换就能用上新列表。
 fn spawn_refresh(login: OfficialLogin, version: String) {
-    std::thread::spawn(move || match refresh(&login, &version) {
-        Ok(true) => after_refresh(),
-        Ok(false) => {}
-        Err(error) => log::warn!("后台刷新 Codex 官方模型列表失败: {error}"),
+    std::thread::spawn(move || {
+        if let Err(error) = refresh(&login, &version) {
+            log::warn!("后台刷新 Codex 官方模型列表失败: {error}");
+        }
     });
-}
-
-fn state_slot() -> &'static OnceLock<crate::store::AppState> {
-    static SLOT: OnceLock<crate::store::AppState> = OnceLock::new();
-    &SLOT
 }
 
 /// 刷新存进了变化的列表，客户端文件还没按它重写成功。只记在进程里：CC Switch 重启时
@@ -767,29 +762,6 @@ pub(crate) fn mark_client_behind() {
 /// 下一个检查点再试；重写期间又刷新出新列表时标记重新立起，不会丢。
 pub(crate) fn take_client_behind() -> bool {
     CLIENT_BEHIND.swap(false, Ordering::SeqCst)
-}
-
-/// 列表变了：按新列表重算契约，变了就重写目录（用户重启 Codex 后看到新模型）。后台检查
-/// 还没开始时（CC Switch 正在启动）先不写，标记留给第一次检查。
-pub(crate) fn after_refresh() {
-    let Some(state) = state_slot().get().cloned() else {
-        return;
-    };
-    tauri::async_runtime::spawn(async move {
-        crate::mode::controller::resync_codex_if_behind(&state).await;
-    });
-}
-
-/// CC Switch 启动时开始后台检查：先查一次，之后每 15 分钟一次。不是「每 6 小时」的
-/// 定时器：从进程启动开始计时的话，每次只运行几小时的用户永远等不到刷新。
-pub(crate) fn start_background_checks(state: crate::store::AppState) {
-    let _ = state_slot().set(state.clone());
-    tauri::async_runtime::spawn(async move {
-        loop {
-            crate::mode::controller::check_codex_official_models(&state).await;
-            tokio::time::sleep(CHECK_EVERY).await;
-        }
-    });
 }
 
 #[cfg(test)]

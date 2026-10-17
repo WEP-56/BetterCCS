@@ -1104,7 +1104,6 @@ struct AppSnapshot {
     stack_members: Vec<String>,
     quota: Option<QuotaView>,
     /// 路由服务该在跑却没在跑。
-    service_down: bool,
     needs_attention: bool,
     profiles: Option<ProfileSection>,
 }
@@ -1115,21 +1114,10 @@ impl AppSnapshot {
         self.providers.iter().find(|p| p.id == id)
     }
 
-    /// 这个应用现在靠路由服务：路由 / 聚合中。
-    fn uses_service(&self) -> bool {
-        match self.mode {
-            TrayMode::Route | TrayMode::Failover | TrayMode::Stack => true,
-            TrayMode::Direct => false,
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 enum TrayProblem {
-    /// 路由服务没在跑，但有应用在用它。
-    ServiceDown { port: u16 },
-    /// 启动时没能接上路由 / 聚合，已退回直连。
-    AttachFailed { app: AppType, stack: bool },
     /// 托盘里的切换没成功。
     SwitchFailed { app: AppType, reason: String },
 }
@@ -1188,19 +1176,8 @@ fn provider_entry(app: &AppType, provider: &Provider) -> ProviderEntry {
     }
 }
 
-fn tray_mode(app_state: &AppState, app: &AppType) -> TrayMode {
-    if !crate::mode::current::is_proxy(app) {
-        return TrayMode::Direct;
-    }
-    if crate::mode::stack::stack_mode_now(app) {
-        return TrayMode::Stack;
-    }
-    let (_, auto_failover) = app_state.db.get_proxy_flags_sync(app.as_str());
-    if auto_failover {
-        TrayMode::Failover
-    } else {
-        TrayMode::Route
-    }
+fn tray_mode(_app_state: &AppState, _app: &AppType) -> TrayMode {
+    TrayMode::Direct
 }
 
 fn collect_app_snapshot(
@@ -1208,7 +1185,6 @@ fn collect_app_snapshot(
     texts: &TrayTexts,
     settings: &crate::settings::AppSettings,
     app: &AppType,
-    service_running: Option<bool>,
     profiles: &[crate::database::Profile],
 ) -> Result<AppSnapshot, AppError> {
     let rows = app_state.db.get_all_providers(app.as_str())?;
@@ -1268,7 +1244,7 @@ fn collect_app_snapshot(
         })
         .transpose()?;
 
-    let mut snapshot = AppSnapshot {
+    Ok(AppSnapshot {
         app: app.clone(),
         mode,
         providers,
@@ -1276,20 +1252,12 @@ fn collect_app_snapshot(
         queue,
         stack_members,
         quota,
-        service_down: false,
         needs_attention: false,
         profiles,
-    };
-    snapshot.service_down = service_running == Some(false) && snapshot.uses_service();
-    Ok(snapshot)
+    })
 }
 
 // ─── 问题区的状态 ─────────────────────────────────────────────────────────────
-
-/// 启动流程（接上路由、拉起 Desktop 映射服务）走完之前不报「路由服务没在跑」：那时它本来就还没起来。
-static STARTUP_SETTLED: AtomicBool = AtomicBool::new(false);
-/// 启动时没能接上、已退回直连的应用（托盘自己留一份，界面照样取走它的那份）。
-static ATTACH_FAILURES: Lazy<Mutex<Vec<(AppType, bool)>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 /// 托盘里切换失败的应用。规格 5.5：处理掉才消失（同一应用之后切换成功、或打开过它的页面），
 /// 不按时间过期。
@@ -1308,30 +1276,12 @@ fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
         .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
-/// 启动流程走完：记下启动时退回直连的应用，重建一次菜单。
-pub fn mark_startup_settled(app: &tauri::AppHandle) {
-    {
-        let mut failures = lock(&ATTACH_FAILURES);
-        for failure in crate::mode::controller::startup_attach_failures_snapshot() {
-            if let Ok(app_type) = failure.app_type.parse::<AppType>() {
-                if !failures.iter().any(|(existing, _)| *existing == app_type) {
-                    failures.push((app_type, failure.stack));
-                }
-            }
-        }
-    }
-    STARTUP_SETTLED.store(true, Ordering::Release);
-    refresh_tray_menu(app);
-}
-
 /// 清掉某个应用的问题行，返回有没有清掉东西。
 fn clear_app_problems(app: &AppType) -> bool {
-    let mut attach = lock(&ATTACH_FAILURES);
     let mut switch = lock(&SWITCH_FAILURES);
-    let before = attach.len() + switch.len();
-    attach.retain(|(existing, _)| existing != app);
+    let before = switch.len();
     switch.retain(|failure| failure.app != *app);
-    attach.len() + switch.len() != before
+    switch.len() != before
 }
 
 /// 主界面打开了某个应用的页面：这个应用的问题行算处理过了（规格 5.5「打开过对应页面」）。
@@ -1354,61 +1304,25 @@ fn record_switch_failure(app: &AppType, reason: String) {
     });
 }
 
-fn service_running(app_state: &AppState) -> Option<bool> {
-    if !STARTUP_SETTLED.load(Ordering::Acquire) {
-        return None;
-    }
-    app_state.proxy_service.running_now()
-}
-
-/// 问题列表。`modes` 是可见应用现在的模式（重新进入路由的应用不再报「退回直连」）。
-fn collect_problems(
-    service_down_port: Option<u16>,
-    visible: &[(AppType, bool)],
-) -> Vec<TrayProblem> {
-    let mut problems = Vec::new();
-    if let Some(port) = service_down_port {
-        problems.push(TrayProblem::ServiceDown { port });
-    }
-    {
-        let mut failures = lock(&ATTACH_FAILURES);
-        // 已经重新进入路由 / 聚合的应用不再报。
-        failures.retain(|(app, _)| {
-            visible
-                .iter()
-                .find(|(visible_app, _)| visible_app == app)
-                .is_none_or(|(_, direct)| *direct)
-        });
-        for (app, stack) in failures.iter() {
-            if visible.iter().any(|(visible_app, _)| visible_app == app) {
-                problems.push(TrayProblem::AttachFailed {
-                    app: app.clone(),
-                    stack: *stack,
-                });
-            }
-        }
-    }
-    {
-        let failures = lock(&SWITCH_FAILURES);
-        for failure in failures.iter() {
-            if visible.iter().any(|(app, _)| *app == failure.app) {
-                problems.push(TrayProblem::SwitchFailed {
-                    app: failure.app.clone(),
-                    reason: failure.reason.clone(),
-                });
-            }
-        }
-    }
-    problems
+/// 问题列表：只看可见应用里切换失败过的。
+fn collect_problems(visible: &[(AppType, bool)]) -> Vec<TrayProblem> {
+    let failures = lock(&SWITCH_FAILURES);
+    failures
+        .iter()
+        .filter(|failure| visible.iter().any(|(app, _)| *app == failure.app))
+        .map(|failure| TrayProblem::SwitchFailed {
+            app: failure.app.clone(),
+            reason: failure.reason.clone(),
+        })
+        .collect()
 }
 
 /// 受影响的应用行尾写「需要处理」（这时不写额度，保持短）。
 fn mark_attention(snapshots: &mut [AppSnapshot], problems: &[TrayProblem]) {
     for snapshot in snapshots.iter_mut() {
-        snapshot.needs_attention = snapshot.service_down
-            || problems.iter().any(|problem| {
-                matches!(problem, TrayProblem::AttachFailed { app, .. } if *app == snapshot.app)
-            });
+        snapshot.needs_attention = problems.iter().any(
+            |problem| matches!(problem, TrayProblem::SwitchFailed { app, .. } if *app == snapshot.app),
+        );
     }
 }
 
@@ -1528,12 +1442,11 @@ fn feedback_text(texts: &TrayTexts, feedback: &TrayFeedback) -> String {
     )
 }
 
-/// 菜单上会自己过时的那部分：问题区、反馈行、「退出」写不写后果。
+/// 菜单上会自己过时的那部分：问题区、反馈行。
 #[derive(Debug, Clone, Default, PartialEq)]
 struct MenuStatus {
     problems: Vec<TrayProblem>,
     feedback: Option<TrayFeedback>,
-    routing_in_use: bool,
 }
 
 // ─── 菜单模型（纯数据）────────────────────────────────────────────────────────
@@ -1594,23 +1507,6 @@ fn provider_id_for(app: &AppType, provider_id: &str) -> String {
 
 fn problem_text(texts: &TrayTexts, problem: &TrayProblem) -> String {
     match problem {
-        TrayProblem::ServiceDown { port } => {
-            fill(texts.problem_service_down, &[("port", &port.to_string())])
-        }
-        TrayProblem::AttachFailed { app, stack } => fill(
-            texts.problem_attach_failed,
-            &[
-                ("app", app_display_name(app)),
-                (
-                    "mode",
-                    if *stack {
-                        texts.mode_stack
-                    } else {
-                        texts.mode_route
-                    },
-                ),
-            ],
-        ),
         TrayProblem::SwitchFailed { app, reason } => fill(
             texts.problem_switch_failed,
             &[
@@ -1623,8 +1519,6 @@ fn problem_text(texts: &TrayTexts, problem: &TrayProblem) -> String {
 
 fn problem_id(problem: &TrayProblem) -> String {
     match problem {
-        TrayProblem::ServiceDown { .. } => "nav:settings:routing".to_string(),
-        TrayProblem::AttachFailed { app, .. } => format!("nav:app:{}:attach", app.as_str()),
         TrayProblem::SwitchFailed { app, .. } => format!("nav:app:{}:failed", app.as_str()),
     }
 }
@@ -1922,17 +1816,8 @@ fn build_menu_model(
     ));
     menu.push(TrayEntry::Separator);
     menu.push(TrayEntry::item("open_website", texts.open_website));
-    // 不换成系统自带的 quit：它不经过 app.exit(0) 的退出流程，客户端指回直连、停服务只能在
-    // RunEvent::Exit 里限时补做（见 lib.rs 的 cleanup_before_system_exit）。
-    // 有应用在用路由服务时把这个后果写在「退出」上（后果不进说明，写在按钮文字里）。
-    menu.push(TrayEntry::item(
-        "quit",
-        if status.routing_in_use {
-            texts.quit_stops_routing
-        } else {
-            texts.quit
-        },
-    ));
+    // 不换成系统自带的 quit：它不经过 app.exit(0) 的退出流程。
+    menu.push(TrayEntry::item("quit", texts.quit));
     menu
 }
 
@@ -1949,7 +1834,6 @@ fn collect_snapshots(
 ) -> Result<(Vec<AppSnapshot>, Vec<TrayProblem>), AppError> {
     let settings = crate::settings::get_settings();
     let visible_apps = settings.visible_apps.clone().unwrap_or_default();
-    let running = service_running(app_state);
     let profiles = if settings.show_profile_switcher {
         app_state.db.get_all_profiles()?
     } else {
@@ -1958,20 +1842,14 @@ fn collect_snapshots(
 
     let mut snapshots = Vec::new();
     for app in TRAY_APPS.iter().filter(|app| visible_apps.is_visible(app)) {
-        snapshots.push(collect_app_snapshot(
-            app_state, texts, &settings, app, running, &profiles,
-        )?);
+        snapshots.push(collect_app_snapshot(app_state, texts, &settings, app, &profiles)?);
     }
 
-    let port = snapshots
-        .iter()
-        .any(|snapshot| snapshot.service_down)
-        .then(|| app_state.db.get_proxy_client_endpoint_sync().1);
     let visible: Vec<(AppType, bool)> = snapshots
         .iter()
         .map(|snapshot| (snapshot.app.clone(), snapshot.mode == TrayMode::Direct))
         .collect();
-    let problems = collect_problems(port, &visible);
+    let problems = collect_problems(&visible);
     mark_attention(&mut snapshots, &problems);
     Ok((snapshots, problems))
 }
@@ -1984,7 +1862,6 @@ fn collect_status(
     let status = MenuStatus {
         problems,
         feedback: current_feedback(),
-        routing_in_use: routing_in_use(app_state),
     };
     Ok((snapshots, status))
 }
@@ -1999,13 +1876,6 @@ fn collect_model(app_state: &AppState, texts: &TrayTexts) -> Result<TrayModel, A
         chrono::Local::now(),
     );
     Ok(TrayModel { entries, status })
-}
-
-/// 退出会让它们断开的情况：路由服务在跑，且有应用在路由 / 聚合模式（含 Claude Desktop；和
-/// `controller::stop_server_if_unused` 的「在用」同一口径，隐藏的应用也算）。
-fn routing_in_use(app_state: &AppState) -> bool {
-    app_state.proxy_service.running_now() == Some(true)
-        && crate::mode::current::proxy_flags(crate::mode::controller::PROXY_APPS).contains(&true)
 }
 
 // ─── 模型 → Tauri 菜单 ─────────────────────────────────────────────────────────
@@ -3514,72 +3384,6 @@ mod tests {
         .unwrap()
     }
 
-    #[test]
-    fn needs_routing_mirrors_the_frontend_rule() {
-        let plain = provider(serde_json::json!({}), serde_json::json!({}));
-        for app in TRAY_APPS {
-            assert!(!provider_needs_routing(&app, &plain), "{app:?}");
-        }
-
-        let copilot = provider(
-            serde_json::json!({"providerType": "github_copilot"}),
-            serde_json::json!({}),
-        );
-        for app in [
-            AppType::Claude,
-            AppType::ClaudeDesktop,
-            AppType::Codex,
-            AppType::GrokBuild,
-        ] {
-            assert!(provider_needs_routing(&app, &copilot), "{app:?}");
-        }
-        assert!(!provider_needs_routing(&AppType::Gemini, &copilot));
-
-        let openai_chat = provider(
-            serde_json::json!({"apiFormat": "openai_chat"}),
-            serde_json::json!({}),
-        );
-        assert!(provider_needs_routing(&AppType::Claude, &openai_chat));
-        assert!(provider_needs_routing(&AppType::Codex, &openai_chat));
-        let anthropic = provider(
-            serde_json::json!({"apiFormat": "anthropic"}),
-            serde_json::json!({}),
-        );
-        assert!(!provider_needs_routing(&AppType::Claude, &anthropic));
-        assert!(provider_needs_routing(&AppType::Codex, &anthropic));
-        let full_url = provider(
-            serde_json::json!({"isFullUrl": true}),
-            serde_json::json!({}),
-        );
-        assert!(provider_needs_routing(&AppType::Claude, &full_url));
-
-        let codex_config = |wire_api: &str| {
-            serde_json::json!({
-                "auth": {"OPENAI_API_KEY": "sk"},
-                "config": format!(
-                    "model_provider = \"x\"\n[model_providers.x]\nbase_url = \"https://x.example/v1\"\nwire_api = \"{wire_api}\"\n"
-                )
-            })
-        };
-        let chat_wire = provider(serde_json::json!({}), codex_config("chat"));
-        assert!(provider_needs_routing(&AppType::Codex, &chat_wire));
-        let responses_wire = provider(serde_json::json!({}), codex_config("responses"));
-        assert!(!provider_needs_routing(&AppType::Codex, &responses_wire));
-
-        let desktop_mapping = provider(
-            serde_json::json!({"claudeDesktopMode": "proxy"}),
-            serde_json::json!({}),
-        );
-        assert!(provider_needs_routing(
-            &AppType::ClaudeDesktop,
-            &desktop_mapping
-        ));
-
-        // 官方卡永远不算。
-        let mut official = copilot.clone();
-        official.category = Some("official".to_string());
-        assert!(!provider_needs_routing(&AppType::Claude, &official));
-    }
 
     #[test]
     fn codex_wire_api_falls_back_to_a_single_assignment_when_toml_is_broken() {
@@ -3615,7 +3419,6 @@ mod tests {
             queue: Vec::new(),
             stack_members: Vec::new(),
             quota: None,
-            service_down: false,
             needs_attention: false,
             profiles: None,
         }
@@ -3684,225 +3487,6 @@ mod tests {
         assert!(matches!(&menu[8], TrayEntry::Item { id, .. } if id == "quit"));
     }
 
-    #[test]
-    fn direct_submenu_sends_needs_routing_providers_to_the_app_page() {
-        let mut copilot = entry("copilot", "GitHub Copilot");
-        copilot.needs_routing = true;
-        let app = snapshot(
-            AppType::Claude,
-            TrayMode::Direct,
-            vec![entry("kimi", "Kimi For Coding"), copilot],
-        );
-        let children = children_of(&model(&[], &[app]), &AppType::Claude);
-        assert_eq!(
-            texts_of(&children),
-            [
-                "直连",
-                "Kimi For Coding",
-                "GitHub Copilot（需要路由）…",
-                "---",
-                "打开 Claude Code 页面"
-            ]
-        );
-        assert!(matches!(
-            &children[0],
-            TrayEntry::Item { enabled: false, .. }
-        ));
-        assert!(matches!(
-            &children[1],
-            TrayEntry::Check { id, checked: true, enabled: true, .. } if id == "prov:claude:kimi"
-        ));
-        assert!(matches!(
-            &children[2],
-            TrayEntry::Item { id, enabled: true, .. } if id == "nav:needs:claude:copilot"
-        ));
-        assert!(matches!(&children[4], TrayEntry::Item { id, .. } if id == "nav:app:claude"));
-    }
-
-    #[test]
-    fn route_submenu_disables_official_plans_with_the_reason() {
-        let mut official = entry("xai", "xAI Official");
-        official.official = true;
-        official.blocked_from_routing = true;
-        let app = snapshot(
-            AppType::GrokBuild,
-            TrayMode::Route,
-            vec![entry("or", "OpenRouter"), official],
-        );
-        let menu = model(&[], &[app]);
-        assert_eq!(text_of(&menu[2]), "Grok Build · 路由 · OpenRouter");
-        let children = children_of(&menu, &AppType::GrokBuild);
-        assert_eq!(text_of(&children[0]), "路由");
-        assert!(
-            matches!(&children[2], TrayEntry::Item { enabled: false, text, .. }
-            if text == "xAI Official（官方订阅不经过路由）")
-        );
-    }
-
-    #[test]
-    fn failover_submenu_is_read_only_and_lists_only_the_queue() {
-        let mut app = snapshot(
-            AppType::Claude,
-            TrayMode::Failover,
-            vec![
-                entry("a", "DeepSeek"),
-                entry("b", "智谱 GLM Coding Plan"),
-                entry("c", "OpenRouter"),
-            ],
-        );
-        app.queue = vec!["a".to_string(), "b".to_string()];
-        let children = children_of(&model(&[], &[app]), &AppType::Claude);
-        assert_eq!(
-            texts_of(&children),
-            [
-                "路由 · 故障转移开启中",
-                "按队列自动选择，要调整请到应用页",
-                "1. DeepSeek",
-                "2. 智谱 GLM Coding Plan",
-                "---",
-                "打开 Claude Code 页面"
-            ]
-        );
-        for row in &children[1..4] {
-            assert!(
-                matches!(
-                    row,
-                    TrayEntry::Item { enabled: false, .. }
-                        | TrayEntry::Check { enabled: false, .. }
-                ),
-                "{row:?}"
-            );
-        }
-        assert!(matches!(
-            &children[2],
-            TrayEntry::Check { checked: true, .. }
-        ));
-    }
-
-    #[test]
-    fn stack_submenu_lists_members_and_the_codex_official_card() {
-        let mut official = entry("official", "OpenAI Official");
-        official.official = true;
-        let mut app = snapshot(
-            AppType::Codex,
-            TrayMode::Stack,
-            vec![
-                entry("deepseek", "DeepSeek"),
-                entry("kimi", "Kimi For Coding"),
-                entry("other", "Not In Stack"),
-                official,
-            ],
-        );
-        app.stack_members = vec!["deepseek".to_string(), "kimi".to_string()];
-        let menu = model(&[], &[app]);
-        assert_eq!(text_of(&menu[2]), "Codex · 聚合 · DeepSeek");
-        let children = children_of(&menu, &AppType::Codex);
-        assert_eq!(
-            texts_of(&children),
-            [
-                "聚合 · 默认 DeepSeek",
-                "DeepSeek",
-                "Kimi For Coding",
-                "OpenAI Official",
-                "---",
-                "打开 Codex 页面"
-            ]
-        );
-    }
-
-    #[test]
-    fn desktop_uses_the_same_mode_rows_as_the_routing_apps() {
-        let mut mapping = entry("kimi", "Kimi For Coding");
-        mapping.needs_routing = true;
-        let mut official = entry("official", "Claude Desktop Official");
-        official.official = true;
-        official.blocked_from_routing = true;
-        let direct = snapshot(
-            AppType::ClaudeDesktop,
-            TrayMode::Direct,
-            vec![mapping.clone(), official.clone()],
-        );
-        let children = children_of(&model(&[], &[direct]), &AppType::ClaudeDesktop);
-        // 直连下要经路由的卡点了去应用页弹「需要路由」，不直接切。
-        assert!(
-            matches!(&children[1], TrayEntry::Item { id, .. } if id == "nav:needs:claude-desktop:kimi")
-        );
-
-        let mut routed = snapshot(
-            AppType::ClaudeDesktop,
-            TrayMode::Route,
-            vec![mapping, official],
-        );
-        routed.current_id = Some("kimi".to_string());
-        let menu = model(&[], &[routed]);
-        assert_eq!(text_of(&menu[2]), "Claude Desktop · 路由 · Kimi For Coding");
-        let children = children_of(&menu, &AppType::ClaudeDesktop);
-        assert!(
-            matches!(&children[1], TrayEntry::Check { id, checked: true, .. } if id == "prov:claude-desktop:kimi")
-        );
-    }
-
-    #[test]
-    fn service_down_shows_the_problem_row_and_needs_attention_instead_of_quota() {
-        let mut mapping = entry("kimi", "Kimi For Coding");
-        mapping.needs_routing = true;
-        let mut desktop = snapshot(AppType::ClaudeDesktop, TrayMode::Route, vec![mapping]);
-        desktop.service_down = true;
-        desktop.quota = Some(QuotaView::Lines(vec![tier_line(
-            &zh(),
-            zh().tier_weekly,
-            20.0,
-            None,
-        )]));
-        let mut apps = [desktop];
-        let problems = [TrayProblem::ServiceDown { port: 15721 }];
-        mark_attention(&mut apps, &problems);
-        let menu = model(&problems, &apps);
-        assert_eq!(text_of(&menu[0]), "路由服务没在运行（端口 15721）");
-        assert!(
-            matches!(&menu[0], TrayEntry::Item { id, enabled: true, .. } if id == "nav:settings:routing")
-        );
-        assert_eq!(text_of(&menu[1]), "---");
-        assert_eq!(text_of(&menu[2]), "打开 CC Switch");
-        assert_eq!(
-            text_of(&menu[4]),
-            "Claude Desktop · 路由 · Kimi For Coding · 需要处理"
-        );
-        // 子菜单和其他路由应用一样以模式标题开头，服务没在跑由顶部问题区说。
-        let children = children_of(&menu, &AppType::ClaudeDesktop);
-        assert_eq!(text_of(&children[0]), "路由");
-    }
-
-    #[test]
-    fn problem_area_keeps_two_rows_then_says_how_many_more() {
-        let problems = [
-            TrayProblem::ServiceDown { port: 15721 },
-            TrayProblem::AttachFailed {
-                app: AppType::Claude,
-                stack: false,
-            },
-            TrayProblem::SwitchFailed {
-                app: AppType::Codex,
-                reason: "config.toml 格式有误".to_string(),
-            },
-        ];
-        let menu = model(&problems, &[]);
-        assert_eq!(
-            texts_of(&menu[..4]),
-            [
-                "路由服务没在运行（端口 15721）",
-                "Claude Code：上次的路由没能接上，已回到直连",
-                "还有 1 个问题，打开 CC Switch 查看",
-                "---"
-            ]
-        );
-        let switch = model(&problems[2..], &[]);
-        assert_eq!(
-            text_of(&switch[0]),
-            "Codex 没切换成功：config.toml 格式有误"
-        );
-        assert!(matches!(&switch[0], TrayEntry::Item { id, .. } if id == "nav:app:codex:failed"));
-    }
 
     #[test]
     fn quota_title_and_almost_out_suffix_on_the_app_row() {
@@ -4006,84 +3590,6 @@ mod tests {
                 if id == "lightweight_mode" && text == "Lightweight mode")));
     }
 
-    #[test]
-    fn stack_header_falls_back_to_the_generic_word_without_a_default() {
-        let mut app = snapshot(
-            AppType::Claude,
-            TrayMode::Stack,
-            vec![entry("deepseek", "DeepSeek")],
-        );
-        app.current_id = None;
-        app.stack_members = vec!["deepseek".to_string()];
-        let children = children_of(&model(&[], &[app.clone()]), &AppType::Claude);
-        assert_eq!(text_of(&children[0]), "聚合 · 默认供应商");
-        app.current_id = Some("deepseek".to_string());
-        let menu = build_menu_model(&en(), &MenuStatus::default(), &[app], false, now());
-        let children = children_of(&menu, &AppType::Claude);
-        assert_eq!(text_of(&children[0]), "Aggregation · Default: DeepSeek");
-    }
-
-    #[test]
-    fn quit_says_the_routing_service_stops_only_while_it_is_in_use() {
-        let quit_text = |texts: &TrayTexts, routing: bool| {
-            let status = MenuStatus {
-                routing_in_use: routing,
-                ..Default::default()
-            };
-            let menu = build_menu_model(texts, &status, &[], false, now());
-            match menu.last() {
-                Some(TrayEntry::Item { id, text, .. }) if id == "quit" => text.clone(),
-                other => panic!("last entry is not quit: {other:?}"),
-            }
-        };
-        assert_eq!(quit_text(&zh(), false), "退出 CC Switch");
-        assert_eq!(quit_text(&zh(), true), "退出 CC Switch（路由服务会停止）");
-        assert_eq!(
-            quit_text(&en(), true),
-            "Quit CC Switch (stops the routing service)"
-        );
-        for language in ["zh", "zh-TW", "en", "ja", "tr"] {
-            let texts = TrayTexts::from_language(language);
-            assert_ne!(texts.quit, texts.quit_stops_routing, "{language}");
-            assert!(
-                texts.quit_stops_routing.starts_with(texts.quit),
-                "{language}"
-            );
-            assert!(texts.header_stack_default.contains("{name}"), "{language}");
-            assert!(texts.tooltip_problem.contains("{problem}"), "{language}");
-            for template in [
-                texts.feedback_switched,
-                texts.feedback_stack_default,
-                texts.feedback_profile,
-            ] {
-                assert!(
-                    template.contains("{app}") && template.contains("{name}"),
-                    "{language}: {template}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn tooltip_names_the_first_problem_and_is_plain_otherwise() {
-        assert_eq!(tray_tooltip(&zh(), &[]), "CC Switch");
-        let problems = [
-            TrayProblem::ServiceDown { port: 15721 },
-            TrayProblem::SwitchFailed {
-                app: AppType::Codex,
-                reason: "boom".to_string(),
-            },
-        ];
-        assert_eq!(
-            tray_tooltip(&zh(), &problems),
-            "CC Switch · 需要处理：路由服务没在运行（端口 15721）"
-        );
-        let long = [TrayProblem::SwitchFailed {
-            app: AppType::Codex,
-            reason: "x".repeat(500),
-        }];
-        assert!(tray_tooltip(&en(), &long).chars().count() <= MAX_TOOLTIP_CHARS);
-    }
 
     #[test]
     fn problem_dot_sits_bottom_right_with_a_clear_ring() {
@@ -4116,99 +3622,6 @@ mod tests {
         assert_eq!(icon_with_problem_dot(&broken, false).rgba(), &[1, 2, 3]);
     }
 
-    #[test]
-    fn feedback_only_for_switches_that_need_a_client_restart() {
-        let name = || "DeepSeek".to_string();
-        for app in [AppType::Codex, AppType::Gemini, AppType::GrokBuild] {
-            assert_eq!(
-                switch_feedback(&app, TrayMode::Direct, name()),
-                Some(TrayFeedback::Switched {
-                    app: app.clone(),
-                    name: name()
-                })
-            );
-            // 路由 / 故障转移换一家立即生效。
-            assert_eq!(switch_feedback(&app, TrayMode::Route, name()), None);
-            assert_eq!(switch_feedback(&app, TrayMode::Failover, name()), None);
-        }
-        assert_eq!(
-            switch_feedback(&AppType::Claude, TrayMode::Direct, name()),
-            None
-        );
-        // Desktop 只在启动时读配置：直连、路由换一家都要重启。
-        for mode in [TrayMode::Direct, TrayMode::Route] {
-            assert!(matches!(
-                switch_feedback(&AppType::ClaudeDesktop, mode, name()),
-                Some(TrayFeedback::Switched { .. })
-            ));
-        }
-        for app in [AppType::Claude, AppType::Codex] {
-            assert!(matches!(
-                switch_feedback(&app, TrayMode::Stack, name()),
-                Some(TrayFeedback::StackDefault { .. })
-            ));
-        }
-    }
-
-    #[test]
-    fn feedback_row_is_a_grey_line_after_the_problems() {
-        let status = MenuStatus {
-            problems: vec![TrayProblem::ServiceDown { port: 15721 }],
-            feedback: Some(TrayFeedback::Switched {
-                app: AppType::Codex,
-                name: "DeepSeek".to_string(),
-            }),
-            routing_in_use: false,
-        };
-        let menu = build_menu_model(&zh(), &status, &[], false, now());
-        assert_eq!(
-            texts_of(&menu[..4]),
-            [
-                "路由服务没在运行（端口 15721）",
-                "Codex 已切换到 DeepSeek，重启 Codex 后生效",
-                "---",
-                "打开 CC Switch",
-            ]
-        );
-        assert!(matches!(&menu[1], TrayEntry::Item { enabled: false, .. }));
-
-        let only_feedback = MenuStatus {
-            feedback: Some(TrayFeedback::StackDefault {
-                app: AppType::Codex,
-                name: "Kimi For Coding".to_string(),
-            }),
-            ..Default::default()
-        };
-        let menu = build_menu_model(&zh(), &only_feedback, &[], false, now());
-        assert_eq!(
-            texts_of(&menu[..3]),
-            [
-                "Codex 的默认供应商改为 Kimi For Coding，重启 Codex 后生效",
-                "---",
-                "打开 CC Switch",
-            ]
-        );
-        assert_eq!(
-            feedback_text(
-                &zh(),
-                &TrayFeedback::ProfileApplied {
-                    app: AppType::Claude,
-                    name: "公司项目".to_string()
-                }
-            ),
-            "已把项目「公司项目」用到 Claude Code"
-        );
-        assert_eq!(
-            feedback_text(
-                &en(),
-                &TrayFeedback::Switched {
-                    app: AppType::ClaudeDesktop,
-                    name: "DeepSeek".to_string()
-                }
-            ),
-            "Claude Desktop switched to DeepSeek. Restart Claude Desktop to apply"
-        );
-    }
 
     #[test]
     fn feedback_goes_away_after_the_menu_showed_it_or_two_minutes() {
@@ -4283,28 +3696,4 @@ mod tests {
         );
     }
 
-    #[test]
-    fn problems_drop_attach_failures_once_the_app_routes_again() {
-        lock(&ATTACH_FAILURES).clear();
-        lock(&SWITCH_FAILURES).clear();
-        lock(&ATTACH_FAILURES).push((AppType::Claude, false));
-        record_switch_failure(&AppType::Codex, "boom".to_string());
-        let visible = [(AppType::Claude, true), (AppType::Codex, true)];
-        assert_eq!(collect_problems(None, &visible).len(), 2);
-        // Claude Code 重新进入路由：「退回直连」的问题行消失。
-        let rerouted = [(AppType::Claude, false), (AppType::Codex, true)];
-        assert_eq!(
-            collect_problems(Some(15721), &rerouted),
-            [
-                TrayProblem::ServiceDown { port: 15721 },
-                TrayProblem::SwitchFailed {
-                    app: AppType::Codex,
-                    reason: "boom".to_string()
-                }
-            ]
-        );
-        assert!(clear_app_problems(&AppType::Codex));
-        assert!(!clear_app_problems(&AppType::Codex));
-        assert!(collect_problems(None, &rerouted).is_empty());
-    }
 }

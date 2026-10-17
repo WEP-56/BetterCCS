@@ -35,7 +35,6 @@ export interface ClaudeDesktopStatus {
   mode?: "direct" | "proxy" | null;
   expectedBaseUrl?: string | null;
   actualBaseUrl?: string | null;
-  proxyRunning: boolean;
   staleRawModels: boolean;
   missingRouteMappings: boolean;
   gatewayTokenConfigured: boolean;

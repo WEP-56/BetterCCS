@@ -19,6 +19,33 @@ where
         .map_err(|error| AppError::Message(format!("用量查询任务失败: {error}")))?
 }
 
+/// 计费模型的来源（`response` 看响应里的用量，`request` 按请求估算）。
+#[tauri::command]
+pub async fn get_pricing_model_source(
+    state: State<'_, AppState>,
+    app_type: String,
+) -> Result<String, String> {
+    state
+        .db
+        .get_pricing_model_source(&app_type)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// 设置计费模型的来源。
+#[tauri::command]
+pub async fn set_pricing_model_source(
+    state: State<'_, AppState>,
+    app_type: String,
+    value: String,
+) -> Result<(), String> {
+    state
+        .db
+        .set_pricing_model_source(&app_type, &value)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// 获取使用量汇总
 #[tauri::command]
 pub async fn get_usage_summary(

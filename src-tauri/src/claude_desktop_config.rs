@@ -109,7 +109,6 @@ pub struct ClaudeDesktopStatus {
     pub mode: Option<ClaudeDesktopMode>,
     pub expected_base_url: Option<String>,
     pub actual_base_url: Option<String>,
-    pub proxy_running: bool,
     pub stale_raw_models: bool,
     pub missing_route_mappings: bool,
     pub gateway_token_configured: bool,
@@ -210,7 +209,7 @@ fn run_at_paths(
     }
 }
 
-pub fn get_status(db: &Database, proxy_running: bool) -> Result<ClaudeDesktopStatus, AppError> {
+pub fn get_status(db: &Database) -> Result<ClaudeDesktopStatus, AppError> {
     if !is_supported_platform() {
         return Ok(ClaudeDesktopStatus {
             supported: false,
@@ -221,7 +220,6 @@ pub fn get_status(db: &Database, proxy_running: bool) -> Result<ClaudeDesktopSta
             mode: None,
             expected_base_url: None,
             actual_base_url: None,
-            proxy_running,
             stale_raw_models: false,
             missing_route_mappings: false,
             gateway_token_configured: false,
@@ -287,7 +285,6 @@ pub fn get_status(db: &Database, proxy_running: bool) -> Result<ClaudeDesktopSta
         mode,
         expected_base_url,
         actual_base_url,
-        proxy_running,
         stale_raw_models,
         missing_route_mappings,
         gateway_token_configured,
@@ -1088,7 +1085,7 @@ pub fn proxy_gateway_base_url_from_db(db: &Database) -> Result<String, AppError>
     }
     Ok(format!(
         "{}{}",
-        crate::services::proxy::proxy_origin(&host, port),
+        crate::mode::legacy::origin(&host, port),
         CLAUDE_DESKTOP_PROXY_PREFIX
     ))
 }
