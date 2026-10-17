@@ -84,35 +84,20 @@ pub struct TrayTexts {
     pub open_website: &'static str,
     pub lightweight_mode: &'static str,
     pub quit: &'static str,
-    /// 有应用在用路由服务时的「退出」：写明后果（客户端指回直连、路由服务停止，下次打开自动接回）。
-    pub quit_stops_routing: &'static str,
     pub projects_label: &'static str,
     pub no_project_label: &'static str,
     pub header_direct: &'static str,
-    pub header_route: &'static str,
-    pub header_failover: &'static str,
-    pub header_stack: &'static str,
-    /// 聚合子菜单标题，写出默认那家：`{name}`
-    pub header_stack_default: &'static str,
-    pub failover_note: &'static str,
-    pub mode_route: &'static str,
-    pub mode_stack: &'static str,
     pub needs_routing_suffix: &'static str,
-    pub official_blocked_suffix: &'static str,
     pub open_app_page: &'static str,
     pub add_provider: &'static str,
     pub almost_out: &'static str,
     pub needs_attention: &'static str,
-    pub problem_service_down: &'static str,
-    pub problem_attach_failed: &'static str,
     pub problem_switch_failed: &'static str,
     pub problem_more: &'static str,
     /// 出问题时托盘图标的悬停提示：`{problem}` 是问题区第一条
     pub tooltip_problem: &'static str,
     /// 反馈行（灰字）：直连切换 / Claude Desktop 切换，`{app}` `{name}`
     pub feedback_switched: &'static str,
-    /// 反馈行：聚合换默认
-    pub feedback_stack_default: &'static str,
     /// 反馈行：应用项目
     pub feedback_profile: &'static str,
     pub tier_five_hour: &'static str,
@@ -189,32 +174,18 @@ impl TrayTexts {
                 open_website: "Open official website",
                 lightweight_mode: "Lightweight mode",
                 quit: "Quit CC Switch",
-                quit_stops_routing: "Quit CC Switch (stops the routing service)",
                 projects_label: "Projects",
                 no_project_label: "No project",
                 header_direct: "Direct",
-                header_route: "Routing",
-                header_failover: "Routing · Failover on",
-                header_stack: "Aggregation · Default provider",
-                header_stack_default: "Aggregation · Default: {name}",
-                failover_note: "Picked from the queue automatically; change it on the app page",
-                mode_route: "Routing",
-                mode_stack: "Aggregation",
                 needs_routing_suffix: " (needs routing)…",
-                official_blocked_suffix: " (official plans don't go through routing)",
                 open_app_page: "Open {app} page",
                 add_provider: "Add provider…",
                 almost_out: "almost out",
                 needs_attention: "needs attention",
-                problem_service_down: "The routing service isn't running (port {port})",
-                problem_attach_failed:
-                    "{app}: {mode} couldn't reconnect at startup; back to direct",
                 problem_switch_failed: "{app} didn't switch: {reason}",
                 problem_more: "{count} more issues — open CC Switch to see them",
                 tooltip_problem: "CC Switch · Needs attention: {problem}",
                 feedback_switched: "{app} switched to {name}. Restart {app} to apply",
-                feedback_stack_default:
-                    "{app}'s default provider is now {name}. Restart {app} to apply",
                 feedback_profile: "Applied project \u{201c}{name}\u{201d} to {app}",
                 tier_five_hour: "5-hour",
                 tier_weekly: "Weekly",
@@ -249,30 +220,18 @@ impl TrayTexts {
                 texts.open_website = "Resmî web sitesini aç";
                 texts.lightweight_mode = "Hafif mod";
                 texts.quit = "CC Switch'ten çık";
-                texts.quit_stops_routing = "CC Switch'ten çık (yönlendirme hizmeti durur)";
                 texts.projects_label = "Projeler";
                 texts.no_project_label = "Proje yok";
                 texts.header_direct = "Doğrudan";
-                texts.header_route = "Yönlendirme";
-                texts.header_failover = "Yönlendirme · Yedek sağlayıcıya geçiş açık";
-                texts.header_stack = "Birleştirme · Varsayılan sağlayıcı";
-                texts.header_stack_default = "Birleştirme · Varsayılan: {name}";
-                texts.failover_note = "Kuyruktan otomatik seçilir; uygulama sayfasından değiştirebilirsiniz";
-                texts.mode_route = "Yönlendirme";
-                texts.mode_stack = "Birleştirme";
                 texts.needs_routing_suffix = " (yönlendirme gerekir)…";
-                texts.official_blocked_suffix = " (resmî abonelikler yönlendirmeyi kullanmaz)";
                 texts.open_app_page = "{app} sayfasını aç";
                 texts.add_provider = "Sağlayıcı ekle…";
                 texts.almost_out = "bitmek üzere";
                 texts.needs_attention = "ilgilenilmesi gerekiyor";
-                texts.problem_service_down = "Yönlendirme hizmeti çalışmıyor (port {port})";
-                texts.problem_attach_failed = "{app}: {mode} başlangıçta yeniden bağlanamadı; doğrudan bağlantıya dönüldü";
                 texts.problem_switch_failed = "{app} geçiş yapamadı: {reason}";
                 texts.problem_more = "{count} sorun daha var — görmek için CC Switch'i açın";
                 texts.tooltip_problem = "CC Switch · İlgilenilmesi gerekiyor: {problem}";
                 texts.feedback_switched = "{app}, {name} sağlayıcısına geçti. Uygulamak için {app} uygulamasını yeniden başlatın";
-                texts.feedback_stack_default = "{app} için varsayılan sağlayıcı artık {name}. Uygulamak için {app} uygulamasını yeniden başlatın";
                 texts.feedback_profile = "{name} projesi {app} uygulamasına uygulandı";
                 texts.tier_five_hour = "5 saatlik";
                 texts.tier_weekly = "Haftalık";
@@ -304,32 +263,20 @@ impl TrayTexts {
                 open_website: "公式サイトを開く",
                 lightweight_mode: "軽量モード",
                 quit: "CC Switch を終了",
-                quit_stops_routing: "CC Switch を終了（ルーティングサービスが停止します）",
                 projects_label: "プロジェクト",
                 no_project_label: "プロジェクトを使用しない",
                 header_direct: "直接接続",
-                header_route: "ルーティング",
-                header_failover: "ルーティング · フェイルオーバー有効",
-                header_stack: "集約 · デフォルトのプロバイダー",
-                header_stack_default: "集約 · デフォルト：{name}",
-                failover_note: "キューの順に自動で選ばれます（変更はアプリのページで）",
-                mode_route: "ルーティング",
-                mode_stack: "集約",
                 needs_routing_suffix: "（ルーティングが必要）…",
-                official_blocked_suffix: "（公式サブスクリプションはルーティングを通りません）",
                 open_app_page: "{app} のページを開く",
                 add_provider: "プロバイダーを追加…",
                 almost_out: "残りわずか",
                 needs_attention: "対応が必要",
-                problem_service_down: "ルーティングサービスが動いていません（ポート {port}）",
-                problem_attach_failed: "{app}：前回の{mode}に再接続できず、直接接続に戻りました",
                 problem_switch_failed: "{app} を切り替えられませんでした：{reason}",
                 problem_more:
                     "ほかに {count} 件の問題があります。CC Switch を開いて確認してください",
                 tooltip_problem: "CC Switch · 対応が必要：{problem}",
                 feedback_switched:
                     "{app} を {name} に切り替えました。反映するには {app} を再起動してください",
-                feedback_stack_default: "{app} のデフォルトのプロバイダーを {name} に変更しました。反映するには {app} を再起動してください",
                 feedback_profile: "プロジェクト「{name}」を {app} に適用しました",
                 tier_five_hour: "5時間",
                 tier_weekly: "週間",
@@ -361,30 +308,18 @@ impl TrayTexts {
                 open_website: "開啟官方網站",
                 lightweight_mode: "輕量模式",
                 quit: "退出 CC Switch",
-                quit_stops_routing: "退出 CC Switch（路由服務會停止）",
                 projects_label: "專案",
                 no_project_label: "不使用專案",
                 header_direct: "直連",
-                header_route: "路由",
-                header_failover: "路由 · 故障轉移開啟中",
-                header_stack: "聚合 · 預設供應商",
-                header_stack_default: "聚合 · 預設 {name}",
-                failover_note: "依佇列自動選擇，要調整請到應用頁",
-                mode_route: "路由",
-                mode_stack: "聚合",
                 needs_routing_suffix: "（需要路由）…",
-                official_blocked_suffix: "（官方訂閱不經過路由）",
                 open_app_page: "開啟 {app} 頁面",
                 add_provider: "新增供應商…",
                 almost_out: "快用完",
                 needs_attention: "需要處理",
-                problem_service_down: "路由服務沒在執行（連接埠 {port}）",
-                problem_attach_failed: "{app}：上次的{mode}沒能接上，已回到直連",
                 problem_switch_failed: "{app} 沒切換成功：{reason}",
                 problem_more: "還有 {count} 個問題，開啟 CC Switch 查看",
                 tooltip_problem: "CC Switch · 需要處理：{problem}",
                 feedback_switched: "{app} 已切換到 {name}，重新啟動 {app} 後生效",
-                feedback_stack_default: "{app} 的預設供應商改為 {name}，重新啟動 {app} 後生效",
                 feedback_profile: "已把專案「{name}」套用到 {app}",
                 tier_five_hour: "5 小時",
                 tier_weekly: "每週",
@@ -416,30 +351,18 @@ impl TrayTexts {
                 open_website: "打开官方网站",
                 lightweight_mode: "轻量模式",
                 quit: "退出 CC Switch",
-                quit_stops_routing: "退出 CC Switch（路由服务会停止）",
                 projects_label: "项目",
                 no_project_label: "不使用项目",
                 header_direct: "直连",
-                header_route: "路由",
-                header_failover: "路由 · 故障转移开启中",
-                header_stack: "聚合 · 默认供应商",
-                header_stack_default: "聚合 · 默认 {name}",
-                failover_note: "按队列自动选择，要调整请到应用页",
-                mode_route: "路由",
-                mode_stack: "聚合",
                 needs_routing_suffix: "（需要路由）…",
-                official_blocked_suffix: "（官方订阅不经过路由）",
                 open_app_page: "打开 {app} 页面",
                 add_provider: "添加供应商…",
                 almost_out: "快用完",
                 needs_attention: "需要处理",
-                problem_service_down: "路由服务没在运行（端口 {port}）",
-                problem_attach_failed: "{app}：上次的{mode}没能接上，已回到直连",
                 problem_switch_failed: "{app} 没切换成功：{reason}",
                 problem_more: "还有 {count} 个问题，打开 CC Switch 查看",
                 tooltip_problem: "CC Switch · 需要处理：{problem}",
                 feedback_switched: "{app} 已切换到 {name}，重启 {app} 后生效",
-                feedback_stack_default: "{app} 的默认供应商改为 {name}，重启 {app} 后生效",
                 feedback_profile: "已把项目「{name}」用到 {app}",
                 tier_five_hour: "5 小时",
                 tier_weekly: "每周",
@@ -966,12 +889,6 @@ fn is_official_account(app: &AppType, provider: &Provider) -> bool {
         || (*app == AppType::Codex && crate::upstream::providers::is_codex_official_provider(provider))
 }
 
-/// 官方订阅不经过路由（Codex 官方卡除外）：路由 / 聚合下不能选。
-fn blocked_from_routing(app: &AppType, provider: &Provider) -> bool {
-    is_official_account(app, provider)
-        && !crate::services::provider::official_provider_supports_proxy_takeover(app, provider)
-}
-
 /// Codex / Grok Build 配置里当前供应商的 `wire_api`；TOML 读不懂时退回唯一的一条赋值。
 fn codex_wire_api(config_text: &str) -> Option<String> {
     if let Ok(doc) = config_text.parse::<toml::Value>() {
@@ -1061,16 +978,6 @@ pub(crate) fn provider_needs_routing(app: &AppType, provider: &Provider) -> bool
 
 // ─── 快照 ────────────────────────────────────────────────────────────────────
 
-/// 应用子菜单的样子。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum TrayMode {
-    Direct,
-    Route,
-    /// 路由 + 自动故障转移：子菜单只读（#6022）。
-    Failover,
-    Stack,
-}
-
 #[derive(Debug, Clone, PartialEq)]
 struct ProviderEntry {
     id: String,
@@ -1078,8 +985,6 @@ struct ProviderEntry {
     /// 同名时补在名字后面的区分词（备注或网址）。
     hint: Option<String>,
     needs_routing: bool,
-    official: bool,
-    blocked_from_routing: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1093,17 +998,12 @@ struct ProfileSection {
 #[derive(Debug, Clone, PartialEq)]
 struct AppSnapshot {
     app: AppType,
-    mode: TrayMode,
     /// 按供应商页的顺序（sort_index → created_at → name）。
     providers: Vec<ProviderEntry>,
     /// 在用的那家（`provider_for(InUse)`）。
     current_id: Option<String>,
-    /// 故障转移队列（按优先级）。
-    queue: Vec<String>,
-    /// 聚合名单。
-    stack_members: Vec<String>,
     quota: Option<QuotaView>,
-    /// 路由服务该在跑却没在跑。
+    /// 托盘里有过没处理掉的失败。
     needs_attention: bool,
     profiles: Option<ProfileSection>,
 }
@@ -1171,13 +1071,7 @@ fn provider_entry(app: &AppType, provider: &Provider) -> ProviderEntry {
         name: provider.name.clone(),
         hint: provider_hint(provider),
         needs_routing: provider_needs_routing(app, provider),
-        official: is_official_account(app, provider),
-        blocked_from_routing: blocked_from_routing(app, provider),
     }
-}
-
-fn tray_mode(_app_state: &AppState, _app: &AppType) -> TrayMode {
-    TrayMode::Direct
 }
 
 fn collect_app_snapshot(
@@ -1192,35 +1086,12 @@ fn collect_app_snapshot(
         .into_iter()
         .map(|(_, provider)| provider_entry(app, provider))
         .collect();
-    // 代理模式下是代理路由到的那家（含故障转移切过去的）。
     let current_id = crate::mode::current::provider_for(
         &app_state.db,
         app,
         crate::mode::current::Purpose::InUse,
     )?
     .filter(|id| rows.contains_key(id));
-    let mode = tray_mode(app_state, app);
-
-    let queue = if mode == TrayMode::Failover {
-        app_state
-            .db
-            .get_failover_queue(app.as_str())?
-            .into_iter()
-            .map(|item| item.provider_id)
-            .filter(|id| rows.contains_key(id))
-            .collect()
-    } else {
-        Vec::new()
-    };
-    let stack_members = if mode == TrayMode::Stack {
-        crate::mode::state::stack(
-            &crate::live::engine::DeviceStore::for_device(),
-            app.as_str(),
-        )?
-        .members
-    } else {
-        Vec::new()
-    };
 
     let quota = current_id.as_deref().and_then(|id| {
         let provider = rows.get(id)?;
@@ -1246,11 +1117,8 @@ fn collect_app_snapshot(
 
     Ok(AppSnapshot {
         app: app.clone(),
-        mode,
         providers,
         current_id,
-        queue,
-        stack_members,
         quota,
         needs_attention: false,
         profiles,
@@ -1305,11 +1173,11 @@ fn record_switch_failure(app: &AppType, reason: String) {
 }
 
 /// 问题列表：只看可见应用里切换失败过的。
-fn collect_problems(visible: &[(AppType, bool)]) -> Vec<TrayProblem> {
+fn collect_problems(visible: &[AppType]) -> Vec<TrayProblem> {
     let failures = lock(&SWITCH_FAILURES);
     failures
         .iter()
-        .filter(|failure| visible.iter().any(|(app, _)| *app == failure.app))
+        .filter(|failure| visible.contains(&failure.app))
         .map(|failure| TrayProblem::SwitchFailed {
             app: failure.app.clone(),
             reason: failure.reason.clone(),
@@ -1337,8 +1205,6 @@ const FEEDBACK_TTL: std::time::Duration = std::time::Duration::from_secs(2 * 60)
 enum TrayFeedback {
     /// Codex / Gemini CLI / Grok Build 直连切换，或 Claude Desktop 切换。
     Switched { app: AppType, name: String },
-    /// 聚合换默认：发布给客户端的模型列表跟着变。
-    StackDefault { app: AppType, name: String },
     /// 应用项目：同时改了供应商、MCP、Skills、提示词。
     ProfileApplied { app: AppType, name: String },
 }
@@ -1352,31 +1218,17 @@ struct FeedbackRecord {
 
 static FEEDBACK: Lazy<Mutex<Option<FeedbackRecord>>> = Lazy::new(|| Mutex::new(None));
 
-/// 切换成功后要不要说一句：客户端只在启动时读配置的才说；Claude Code 直连、路由 / 故障转移
-/// 换一家立即生效，不说。Claude Desktop 换一家都要重启 Desktop（路由那家的模型列表写在配置
-/// 里，聚合换默认也一样）。
-fn switch_feedback(app: &AppType, mode: TrayMode, name: String) -> Option<TrayFeedback> {
-    match mode {
-        TrayMode::Direct | TrayMode::Route | TrayMode::Stack if *app == AppType::ClaudeDesktop => {
-            Some(TrayFeedback::Switched {
-                app: app.clone(),
-                name,
-            })
-        }
-        TrayMode::Direct
-            if matches!(app, AppType::Codex | AppType::Gemini | AppType::GrokBuild) =>
-        {
-            Some(TrayFeedback::Switched {
-                app: app.clone(),
-                name,
-            })
-        }
-        TrayMode::Stack => Some(TrayFeedback::StackDefault {
-            app: app.clone(),
-            name,
-        }),
-        _ => None,
-    }
+/// 切换成功后要不要说一句：客户端只在启动时读配置的才说；Claude Code 换一家立即生效，不说。
+/// Claude Desktop 换一家都要重启 Desktop（模型列表写在配置里）。
+fn switch_feedback(app: &AppType, name: String) -> Option<TrayFeedback> {
+    matches!(
+        app,
+        AppType::ClaudeDesktop | AppType::Codex | AppType::Gemini | AppType::GrokBuild
+    )
+    .then(|| TrayFeedback::Switched {
+        app: app.clone(),
+        name,
+    })
 }
 
 /// 记下最近一次托盘操作的结果（覆盖上一条）。调用方随后会重建菜单。
@@ -1430,7 +1282,6 @@ pub fn note_tray_click(button: tauri::tray::MouseButton) {
 fn feedback_text(texts: &TrayTexts, feedback: &TrayFeedback) -> String {
     let (template, app, name) = match feedback {
         TrayFeedback::Switched { app, name } => (texts.feedback_switched, app, name),
-        TrayFeedback::StackDefault { app, name } => (texts.feedback_stack_default, app, name),
         TrayFeedback::ProfileApplied { app, name } => (texts.feedback_profile, app, name),
     };
     fill(
@@ -1523,19 +1374,10 @@ fn problem_id(problem: &TrayProblem) -> String {
     }
 }
 
-/// 应用行标题：`<应用全称> · [模式词 · ]<在用供应商>[ · <额度>][ · 快用完][ · 需要处理]`。
+/// 应用行标题：`<应用全称> · <在用供应商>[ · <额度>][ · 快用完][ · 需要处理]`。
 fn app_row_title(texts: &TrayTexts, snapshot: &AppSnapshot) -> String {
     let mut parts: Vec<String> = vec![app_display_name(&snapshot.app).to_string()];
-    let current = snapshot.current();
-    let mode_word = match snapshot.mode {
-        TrayMode::Route | TrayMode::Failover => Some(texts.mode_route),
-        TrayMode::Stack => Some(texts.mode_stack),
-        TrayMode::Direct => None,
-    };
-    if let Some(word) = mode_word {
-        parts.push(word.to_string());
-    }
-    if let Some(provider) = current {
+    if let Some(provider) = snapshot.current() {
         parts.push(truncate_chars(&provider.name, MAX_NAME_CHARS));
     }
     if snapshot.needs_attention {
@@ -1582,93 +1424,23 @@ fn provider_rows(texts: &TrayTexts, snapshot: &AppSnapshot) -> Vec<TrayEntry> {
     let app = &snapshot.app;
     let current = snapshot.current_id.as_deref();
     let is_current = |p: &ProviderEntry| current == Some(p.id.as_str());
-    match snapshot.mode {
-        TrayMode::Direct => {
-            let listed: Vec<&ProviderEntry> = snapshot.providers.iter().collect();
-            let names = display_names(&listed);
-            listed
-                .iter()
-                .zip(names)
-                .map(|(p, name)| {
-                    if p.needs_routing {
-                        // 直连下不能直接切：打开应用页，弹和主界面同一个「需要路由」对话框。
-                        TrayEntry::item(
-                            format!("nav:needs:{}:{}", app.as_str(), p.id),
-                            format!("{name}{}", texts.needs_routing_suffix),
-                        )
-                    } else {
-                        TrayEntry::check(provider_id_for(app, &p.id), name, true, is_current(p))
-                    }
-                })
-                .collect()
-        }
-        TrayMode::Route => {
-            let listed: Vec<&ProviderEntry> = snapshot.providers.iter().collect();
-            let names = display_names(&listed);
-            listed
-                .iter()
-                .zip(names)
-                .map(|(p, name)| {
-                    if p.blocked_from_routing {
-                        TrayEntry::label(
-                            format!("info:{}:blocked:{}", app.as_str(), p.id),
-                            format!("{name}{}", texts.official_blocked_suffix),
-                        )
-                    } else {
-                        TrayEntry::check(provider_id_for(app, &p.id), name, true, is_current(p))
-                    }
-                })
-                .collect()
-        }
-        TrayMode::Failover => {
-            // 只读：只列队列，勾 = 现在路由到的那家；托盘不再悄悄关掉故障转移（#6022）。
-            let listed: Vec<&ProviderEntry> = snapshot
-                .queue
-                .iter()
-                .filter_map(|id| snapshot.providers.iter().find(|p| p.id == *id))
-                .collect();
-            let names = display_names(&listed);
-            let mut rows = vec![TrayEntry::label(
-                format!("info:{}:failover", app.as_str()),
-                texts.failover_note,
-            )];
-            rows.extend(
-                listed
-                    .iter()
-                    .zip(names)
-                    .enumerate()
-                    .map(|(index, (p, name))| {
-                        TrayEntry::check(
-                            provider_id_for(app, &p.id),
-                            format!("{}. {name}", index + 1),
-                            false,
-                            is_current(p),
-                        )
-                    }),
-            );
-            rows
-        }
-        TrayMode::Stack => {
-            // 只列名单里的成员和能做默认的官方卡（Codex 官方卡不能加入聚合，但能做默认）；点一家 = 设为默认。
-            let listed: Vec<&ProviderEntry> = snapshot
-                .providers
-                .iter()
-                .filter(|p| {
-                    is_current(p)
-                        || (!p.blocked_from_routing
-                            && (snapshot.stack_members.contains(&p.id) || p.official))
-                })
-                .collect();
-            let names = display_names(&listed);
-            listed
-                .iter()
-                .zip(names)
-                .map(|(p, name)| {
-                    TrayEntry::check(provider_id_for(app, &p.id), name, true, is_current(p))
-                })
-                .collect()
-        }
-    }
+    let listed: Vec<&ProviderEntry> = snapshot.providers.iter().collect();
+    let names = display_names(&listed);
+    listed
+        .iter()
+        .zip(names)
+        .map(|(p, name)| {
+            if p.needs_routing {
+                // 客户端不支持的协议格式不能直接切：打开应用页，弹和主界面同一个对话框。
+                TrayEntry::item(
+                    format!("nav:needs:{}:{}", app.as_str(), p.id),
+                    format!("{name}{}", texts.needs_routing_suffix),
+                )
+            } else {
+                TrayEntry::check(provider_id_for(app, &p.id), name, true, is_current(p))
+            }
+        })
+        .collect()
 }
 
 fn app_children(
@@ -1679,22 +1451,10 @@ fn app_children(
     let app = snapshot.app.as_str();
     let mut children = Vec::new();
 
-    let header = match snapshot.mode {
-        TrayMode::Direct => Some(texts.header_direct.to_string()),
-        TrayMode::Route => Some(texts.header_route.to_string()),
-        TrayMode::Failover => Some(texts.header_failover.to_string()),
-        // 聚合：标题写出默认那家（勾着的就是它）；还没有默认时退回泛称。
-        TrayMode::Stack => Some(match snapshot.current() {
-            Some(current) => fill(
-                texts.header_stack_default,
-                &[("name", &truncate_chars(&current.name, MAX_NAME_CHARS))],
-            ),
-            None => texts.header_stack.to_string(),
-        }),
-    };
-    if let Some(header) = header {
-        children.push(TrayEntry::label(format!("info:{app}:header"), header));
-    }
+    children.push(TrayEntry::label(
+        format!("info:{app}:header"),
+        texts.header_direct,
+    ));
     children.extend(provider_rows(texts, snapshot));
 
     // 额度说明行：可点（打开应用页），文字才是正常对比度。
@@ -1845,10 +1605,7 @@ fn collect_snapshots(
         snapshots.push(collect_app_snapshot(app_state, texts, &settings, app, &profiles)?);
     }
 
-    let visible: Vec<(AppType, bool)> = snapshots
-        .iter()
-        .map(|snapshot| (snapshot.app.clone(), snapshot.mode == TrayMode::Direct))
-        .collect();
+    let visible: Vec<AppType> = snapshots.iter().map(|snapshot| snapshot.app.clone()).collect();
     let problems = collect_problems(&visible);
     mark_attention(&mut snapshots, &problems);
     Ok((snapshots, problems))
@@ -2397,9 +2154,9 @@ pub fn handle_provider_tray_event(app: &tauri::AppHandle, event_id: &str) -> boo
     let provider_id = provider_id.to_string();
     tauri::async_runtime::spawn_blocking(move || {
         match handle_provider_click(&app_handle, &app_type, &provider_id) {
-            Ok(ClickOutcome::Switched { mode, name }) => {
+            Ok(ClickOutcome::Switched { name }) => {
                 clear_app_problems(&app_type);
-                if let Some(feedback) = switch_feedback(&app_type, mode, name) {
+                if let Some(feedback) = switch_feedback(&app_type, name) {
                     record_feedback(&app_handle, feedback);
                 }
                 emit_switched(&app_handle, &app_type, &provider_id);
@@ -2429,16 +2186,16 @@ pub fn handle_provider_tray_event(app: &tauri::AppHandle, event_id: &str) -> boo
 }
 
 enum ClickOutcome {
-    /// 切过去了；`mode` 是点击时的模式，决定要不要出反馈行。
-    Switched { mode: TrayMode, name: String },
-    /// 已经在用 / 故障转移开着（只读）：什么都不做。
+    /// 切过去了。
+    Switched { name: String },
+    /// 已经在用：什么都不做。
     Unchanged,
-    /// 直连下点了需要路由的那家：不直接切。
+    /// 点了客户端不支持的协议格式：不直接切。
     NeedsRoute,
 }
 
-/// 点一家供应商：切换照旧走 `ProviderService::switch`（里面先拿切换锁再看模式）。不再先关掉
-/// 自动故障转移（#6022）；点已勾着的那家不再写一次客户端文件。
+/// 点一家供应商：切换走 `ProviderService::switch`（里面先拿切换锁）。点已勾着的那家不再写
+/// 一次客户端文件。
 fn handle_provider_click(
     app: &tauri::AppHandle,
     app_type: &AppType,
@@ -2456,24 +2213,15 @@ fn handle_provider_click(
     if current.as_deref() == Some(provider_id) {
         return Ok(ClickOutcome::Unchanged);
     }
-    let mode = tray_mode(state, app_type);
-    if mode == TrayMode::Failover {
-        log::info!(
-            "{} 的故障转移开着，托盘只读，不切换",
-            app_display_name(app_type)
-        );
-        return Ok(ClickOutcome::Unchanged);
-    }
     let provider = state
         .db
         .get_provider_by_id(provider_id, app_type.as_str())?
         .ok_or_else(|| AppError::Message(format!("供应商 {provider_id} 不存在")))?;
-    if mode == TrayMode::Direct && provider_needs_routing(app_type, &provider) {
+    if provider_needs_routing(app_type, &provider) {
         return Ok(ClickOutcome::NeedsRoute);
     }
     crate::services::ProviderService::switch(state, app_type.clone(), provider_id)?;
     Ok(ClickOutcome::Switched {
-        mode,
         name: provider.name,
     })
 }
@@ -2796,29 +2544,18 @@ mod tests {
     }
 
     #[test]
-    fn mode_names_follow_the_v7_terms_in_every_language() {
+    fn direct_header_and_flags_read_the_same_in_every_language() {
         let zh = zh();
-        assert_eq!(
-            (zh.header_direct, zh.mode_route, zh.mode_stack),
-            ("直连", "路由", "聚合")
-        );
-        assert_eq!(zh.header_failover, "路由 · 故障转移开启中");
+        assert_eq!(zh.header_direct, "直连");
         let tw = TrayTexts::from_language("zh-TW");
-        assert_eq!((tw.header_direct, tw.mode_stack), ("直連", "聚合"));
+        assert_eq!(tw.header_direct, "直連");
         let en = en();
-        assert_eq!(
-            (en.header_direct, en.mode_route, en.mode_stack),
-            ("Direct", "Routing", "Aggregation")
-        );
+        assert_eq!(en.header_direct, "Direct");
         let ja = TrayTexts::from_language("ja");
-        assert_eq!(ja.mode_route, "ルーティング");
+        assert_eq!(ja.header_direct, "直接接続");
         for texts in [zh, tw, en, ja] {
             // 托盘不用 emoji 表达状态（Windows 菜单里彩色 emoji 会变成单色轮廓）。
-            for text in [
-                texts.almost_out,
-                texts.needs_attention,
-                texts.official_blocked_suffix,
-            ] {
+            for text in [texts.almost_out, texts.needs_attention] {
                 assert!(text.chars().all(|c| (c as u32) < 0x1F000), "{text}");
             }
         }
@@ -3405,19 +3142,14 @@ mod tests {
             name: name.to_string(),
             hint: None,
             needs_routing: false,
-            official: false,
-            blocked_from_routing: false,
         }
     }
 
-    fn snapshot(app: AppType, mode: TrayMode, providers: Vec<ProviderEntry>) -> AppSnapshot {
+    fn snapshot(app: AppType, providers: Vec<ProviderEntry>) -> AppSnapshot {
         AppSnapshot {
             app,
-            mode,
             current_id: providers.first().map(|p| p.id.clone()),
             providers,
-            queue: Vec::new(),
-            stack_members: Vec::new(),
             quota: None,
             needs_attention: false,
             profiles: None,
@@ -3461,12 +3193,9 @@ mod tests {
     #[test]
     fn top_level_order_is_open_apps_lightweight_website_quit() {
         let apps = [
-            snapshot(
-                AppType::Claude,
-                TrayMode::Direct,
-                vec![entry("kimi", "Kimi For Coding")],
+            snapshot(AppType::Claude, vec![entry("kimi", "Kimi For Coding")],
             ),
-            snapshot(AppType::GrokBuild, TrayMode::Direct, vec![]),
+            snapshot(AppType::GrokBuild, vec![]),
         ];
         let menu = model(&[], &apps);
         assert_eq!(
@@ -3490,10 +3219,7 @@ mod tests {
 
     #[test]
     fn quota_title_and_almost_out_suffix_on_the_app_row() {
-        let mut app = snapshot(
-            AppType::Claude,
-            TrayMode::Direct,
-            vec![entry("official", "Claude Official")],
+        let mut app = snapshot(AppType::Claude, vec![entry("official", "Claude Official")],
         );
         let quota = make_quota(
             "claude",
@@ -3510,10 +3236,7 @@ mod tests {
     #[test]
     fn app_row_title_writes_every_tier_including_the_roomy_five_hour_one() {
         // #8011：火山三档里 5 小时剩得最多，只留剩余最少两档时它总被挤掉。
-        let mut app = snapshot(
-            AppType::Claude,
-            TrayMode::Direct,
-            vec![entry("volc", "火山方舟")],
+        let mut app = snapshot(AppType::Claude, vec![entry("volc", "火山方舟")],
         );
         let volcengine = usage_result(
             true,
@@ -3532,10 +3255,7 @@ mod tests {
 
     #[test]
     fn projects_live_inside_the_app_submenu() {
-        let mut app = snapshot(
-            AppType::Codex,
-            TrayMode::Direct,
-            vec![entry("deepseek", "DeepSeek")],
+        let mut app = snapshot(AppType::Codex, vec![entry("deepseek", "DeepSeek")],
         );
         app.profiles = Some(ProfileSection {
             scope: "codex",

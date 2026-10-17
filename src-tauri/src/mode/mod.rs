@@ -4,6 +4,5 @@ pub mod apply;
 pub mod current;
 pub mod legacy;
 pub mod operation;
-pub mod stack;
 pub mod state;
 pub mod switch_lock;

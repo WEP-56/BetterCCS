@@ -14,7 +14,6 @@ use crate::live::floor;
 use crate::live::patch::json::{self as patch_json, ClearScope, JsonPatch};
 use crate::live::patch::{KeyPath, LivePatch, LiveWriteError};
 use crate::mode::operation::{self, FileChange};
-use crate::mode::stack::DesktopStackModel;
 use crate::mode::state::{self, PendingTarget};
 use crate::provider::{ClaudeDesktopMode, Provider};
 
@@ -1114,14 +1113,10 @@ pub fn gateway_base_url(proxy_url: &str) -> String {
 /// 路由模式的网关 profile：指向本地路由、带 gateway token，模型列表是路由那家的模型表
 /// （模型映射卡的映射表，直连卡的模型列表）。换路由那家，模型列表跟着变，要重写文件、
 /// 重启 Desktop。
-///
-/// 聚合模式下 `stack` 是其他几家发布的模型，排在路由那家后面（第一项是默认模型，仍是路由
-/// 那家的），并关掉模型发现：列表完全由这里决定。Desktop 最多收 200 条，多出的不写。
 pub fn route_profile(
     db: &Database,
     route: &Provider,
     proxy_url: &str,
-    stack: &[DesktopStackModel],
 ) -> Result<Value, AppError> {
     if is_official_provider(route) {
         return Err(AppError::localized(
@@ -1138,28 +1133,19 @@ pub fn route_profile(
             label_override: route.label_override,
             supports_1m: route.supports_1m,
         })
-        .chain(stack.iter().map(|model| InferenceModelSpec {
-            name: model.id.clone(),
-            label_override: Some(model.label.clone()),
-            supports_1m: model.supports_1m,
-        }))
         .collect::<Vec<_>>();
     if model_specs.len() > MAX_INFERENCE_MODELS {
         log::warn!(
-            "Claude Desktop 最多 {MAX_INFERENCE_MODELS} 个模型，聚合的模型共 {} 个，多出的不写入",
+            "Claude Desktop 最多 {MAX_INFERENCE_MODELS} 个模型，路由那家有 {} 个，多出的不写入",
             model_specs.len()
         );
         model_specs.truncate(MAX_INFERENCE_MODELS);
     }
-    let mut profile = build_gateway_profile(
+    Ok(build_gateway_profile(
         &gateway_base_url(proxy_url),
         &get_or_create_gateway_token(db)?,
         Some(model_specs.as_slice()),
-    );
-    if !stack.is_empty() {
-        profile["modelDiscoveryEnabled"] = json!(false);
-    }
-    Ok(profile)
+    ))
 }
 
 fn write_profile_at_paths(
@@ -1621,7 +1607,7 @@ mod tests {
             let origin = gateway
                 .strip_suffix(CLAUDE_DESKTOP_PROXY_PREFIX)
                 .unwrap_or(&gateway);
-            Some(route_profile(db, provider, origin, &[])?)
+            Some(route_profile(db, provider, origin)?)
         } else {
             Some(direct_profile(provider)?)
         };
@@ -1914,7 +1900,7 @@ mod tests {
             }
             let before = serde_json::to_value(&provider).expect("provider snapshot");
             let db = test_db();
-            let profile = route_profile(&db, &provider, "http://127.0.0.1:15721", &[])
+            let profile = route_profile(&db, &provider, "http://127.0.0.1:15721")
                 .expect("native provider should not need a pre-existing mapping");
 
             assert_eq!(
@@ -1978,7 +1964,7 @@ mod tests {
 
         let error = validate_proxy_provider(&provider).expect_err("mapping is required");
         assert!(error.to_string().contains("至少需要一个模型路由映射"));
-        route_profile(&test_db(), &provider, "http://127.0.0.1:15721", &[])
+        route_profile(&test_db(), &provider, "http://127.0.0.1:15721")
             .expect_err("an empty mapping must not silently become native defaults");
     }
 
