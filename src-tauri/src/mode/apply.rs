@@ -46,9 +46,11 @@ fn direct_provider(state: &AppState, app: &AppType) -> Result<Option<Provider>, 
 }
 
 /// 客户端文件现在是谁写进去的。
+///
+/// `Direct` 装的是整张供应商行（一千多字节），装箱是为了别让这个短命枚举每次都在栈上摊开。
 enum LiveNow {
     /// 直连投影（或还没写过任何东西）。
-    Direct(Option<Provider>),
+    Direct(Option<Box<Provider>>),
     /// 本地路由时代留下的契约；`contract` 是当时记下的独有字段，写回直连时按它删除。
     Legacy(Option<Contract>),
 }
@@ -58,7 +60,7 @@ impl LiveNow {
         if mode.attached || mode.is_proxy() {
             Ok(Self::Legacy(mode.contract.clone()))
         } else {
-            Ok(Self::Direct(direct_provider(state, app)?))
+            Ok(Self::Direct(direct_provider(state, app)?.map(Box::new)))
         }
     }
 
@@ -79,7 +81,7 @@ impl LiveNow {
     /// Codex 的客户端文件现在是谁写进去的。
     fn codex_owner(&self) -> Owner<'_> {
         match self {
-            Self::Direct(provider) => provider.as_ref().map_or(Owner::None, Owner::Provider),
+            Self::Direct(provider) => provider.as_deref().map_or(Owner::None, Owner::Provider),
             Self::Legacy(Some(contract)) => Owner::Contract {
                 contract,
                 route: None,

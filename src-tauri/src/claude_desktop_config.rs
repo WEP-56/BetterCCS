@@ -26,7 +26,6 @@ const CONFIG_FILE: &str = "claude_desktop_config.json";
 const CONFIG_LIBRARY_DIR: &str = "configLibrary";
 const GATEWAY_TOKEN_SETTING_KEY: &str = "claude_desktop_gateway_token";
 const CLAUDE_DESKTOP_PROXY_PREFIX: &str = "/claude-desktop";
-/// `inferenceModels` 的上限（Desktop 的 schema 写着 `maxItems: 200`）。
 
 /// Claude Desktop 模型菜单识别的 route ID 前缀。
 pub const CLAUDE_ROUTE_PREFIX: &str = "claude-";
@@ -1359,31 +1358,6 @@ mod tests {
                 ClaudeDesktopModelRoute {
                     model: "kimi-k2".to_string(),
                     label_override: Some("Kimi K2".to_string()),
-                    supports_1m: Some(true),
-                },
-            )]),
-            ..Default::default()
-        });
-        provider
-    }
-
-    fn mimo_anthropic_proxy_provider(id: &str) -> Provider {
-        let mut provider = direct_provider(id);
-        provider.name = "MiMo Proxy".to_string();
-        provider.settings_config = json!({
-            "env": {
-                "ANTHROPIC_BASE_URL": "https://api.xiaomimimo.com/anthropic",
-                "ANTHROPIC_AUTH_TOKEN": "test-token"
-            }
-        });
-        provider.meta = Some(ProviderMeta {
-            claude_desktop_mode: Some(ClaudeDesktopMode::Proxy),
-            api_format: Some("anthropic".to_string()),
-            claude_desktop_model_routes: std::collections::HashMap::from([(
-                "claude-sonnet-4-6".to_string(),
-                ClaudeDesktopModelRoute {
-                    model: "mimo-v2.5-pro".to_string(),
-                    label_override: Some("MiMo v2.5 Pro".to_string()),
                     supports_1m: Some(true),
                 },
             )]),

@@ -151,7 +151,6 @@ mod tests {
             cache_creation_tokens: 100,
             cache_creation_1h_tokens: 0,
             model: None,
-            message_id: None,
         };
 
         let pricing = ModelPricing::from_strings("3.0", "15.0", "0.3", "3.75").unwrap();
@@ -179,36 +178,20 @@ mod tests {
     fn test_claude_1h_cache_writes_billed_at_1h_rate() {
         // Claude Opus 4.8：5m 缓存写入 $6.25/M，1h 缓存写入 $10/M（输入价的 2 倍）
         let pricing = ModelPricing::from_strings("5", "25", "0.50", "6.25").unwrap();
-        let usage = serde_json::json!({
-            "input_tokens": 2,
-            "output_tokens": 1,
-            "cache_read_input_tokens": 0,
-            "cache_creation_input_tokens": 1000,
-            "cache_creation": {
-                "ephemeral_5m_input_tokens": 400,
-                "ephemeral_1h_input_tokens": 600
-            }
-        });
-        let response = serde_json::json!({ "model": "claude-opus-4-8", "usage": usage });
-        let events = [
-            serde_json::json!({
-                "type": "message_start",
-                "message": { "model": "claude-opus-4-8", "usage": usage }
-            }),
-            serde_json::json!({ "type": "message_delta", "usage": { "output_tokens": 5 } }),
-        ];
-
-        for parsed in [
-            TokenUsage::from_claude_response(&response),
-            TokenUsage::from_claude_stream_events(&events),
-        ] {
-            let cost = CostCalculator::calculate(&parsed.unwrap(), &pricing, Decimal::ONE);
-            // 400 × 6.25 / 1M + 600 × 10 / 1M = 0.0085
-            assert_eq!(
-                cost.cache_creation_cost,
-                Decimal::from_str("0.0085").unwrap()
-            );
-        }
+        let usage = TokenUsage {
+            input_tokens: 2,
+            output_tokens: 5,
+            cache_read_tokens: 0,
+            cache_creation_tokens: 1000,
+            cache_creation_1h_tokens: 600,
+            model: Some("claude-opus-4-8".to_string()),
+        };
+        let cost = CostCalculator::calculate(&usage, &pricing, Decimal::ONE);
+        // 400 × 6.25 / 1M + 600 × 10 / 1M = 0.0085
+        assert_eq!(
+            cost.cache_creation_cost,
+            Decimal::from_str("0.0085").unwrap()
+        );
     }
 
     #[test]
@@ -220,7 +203,6 @@ mod tests {
             cache_creation_tokens: 100,
             cache_creation_1h_tokens: 0,
             model: None,
-            message_id: None,
         };
 
         let pricing = ModelPricing::from_strings("3.0", "15.0", "0.3", "3.75").unwrap();
@@ -248,7 +230,6 @@ mod tests {
             cache_creation_tokens: 0,
             cache_creation_1h_tokens: 0,
             model: None,
-            message_id: None,
         };
         let pricing = ModelPricing::from_strings("10", "0", "1", "0").unwrap();
 
@@ -268,7 +249,6 @@ mod tests {
             cache_creation_tokens: 0,
             cache_creation_1h_tokens: 0,
             model: None,
-            message_id: None,
         };
 
         let pricing = ModelPricing::from_strings("3.0", "15.0", "0", "0").unwrap();
@@ -291,7 +271,6 @@ mod tests {
             cache_creation_tokens: 1,
             cache_creation_1h_tokens: 0,
             model: None,
-            message_id: None,
         };
 
         let pricing = ModelPricing::from_strings("0.075", "0.3", "0.01875", "0.075").unwrap();

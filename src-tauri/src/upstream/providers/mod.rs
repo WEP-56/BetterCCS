@@ -3,7 +3,6 @@
 pub mod codex;
 pub mod codex_oauth_auth;
 pub mod copilot_auth;
-pub(crate) mod copilot_model_map;
 pub mod xai_oauth_auth;
 
 pub const XAI_API_BASE_URL: &str = "https://api.x.ai/v1";

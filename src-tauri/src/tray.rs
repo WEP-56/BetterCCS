@@ -3109,19 +3109,6 @@ mod tests {
         );
     }
 
-    // ─── 「需要路由」判定（和前端 providerNeedsRouting 对照）───
-
-    fn provider(meta: serde_json::Value, settings: serde_json::Value) -> Provider {
-        serde_json::from_value(serde_json::json!({
-            "id": "p1",
-            "name": "P1",
-            "settingsConfig": settings,
-            "meta": meta,
-        }))
-        .unwrap()
-    }
-
-
     #[test]
     fn codex_wire_api_falls_back_to_a_single_assignment_when_toml_is_broken() {
         assert_eq!(

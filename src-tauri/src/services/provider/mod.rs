@@ -143,7 +143,6 @@ pub struct SwitchResult {
 mod tests {
     use super::*;
     #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
-    use crate::claude_desktop_config::PROFILE_ID;
     use crate::config::{get_claude_settings_path, read_json_file, write_json_file};
     use crate::database::Database;
     use crate::provider::{
@@ -237,32 +236,6 @@ mod tests {
                 }
             }
         }
-    }
-
-    #[cfg(windows)]
-    fn claude_desktop_profile_path(home: &Path) -> PathBuf {
-        home.join("AppData")
-            .join("Local")
-            .join("Claude-3p")
-            .join("configLibrary")
-            .join(format!("{PROFILE_ID}.json"))
-    }
-
-    #[cfg(target_os = "macos")]
-    fn claude_desktop_profile_path(home: &Path) -> PathBuf {
-        home.join("Library")
-            .join("Application Support")
-            .join("Claude-3p")
-            .join("configLibrary")
-            .join(format!("{PROFILE_ID}.json"))
-    }
-
-    #[cfg(target_os = "linux")]
-    fn claude_desktop_profile_path(home: &Path) -> PathBuf {
-        home.join(".config")
-            .join("Claude-3p")
-            .join("configLibrary")
-            .join(format!("{PROFILE_ID}.json"))
     }
 
     fn test_guard() -> std::sync::MutexGuard<'static, ()> {

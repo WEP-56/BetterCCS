@@ -1088,7 +1088,6 @@ fn session_costs(conn: &rusqlite::Connection, msg: &ParsedAssistantUsage) -> [St
         cache_creation_tokens: msg.cache_creation_tokens,
         cache_creation_1h_tokens: msg.cache_creation_1h_tokens,
         model: Some(msg.model.clone()),
-        message_id: None,
     };
     match find_model_pricing_for_session(conn, &msg.model) {
         Some(pricing) => {

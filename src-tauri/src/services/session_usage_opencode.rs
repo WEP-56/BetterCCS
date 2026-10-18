@@ -482,7 +482,6 @@ fn insert_opencode_message(
                 cache_creation_tokens: msg.cache_write_tokens,
                 cache_creation_1h_tokens: 0,
                 model: Some(msg.model_id.clone()),
-                message_id: None,
             };
 
             match find_model_pricing(&conn, &msg.model_id) {

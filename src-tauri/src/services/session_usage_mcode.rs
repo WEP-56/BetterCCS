@@ -51,7 +51,6 @@ fn sync_from_database(
             cache_creation_tokens: row.get(8)?,
             cache_creation_1h_tokens: 0,
             model: Some(model.into()),
-            message_id: None,
         };
         let native_cost: Option<f64> = row.get(9)?;
         let cost = match native_cost {

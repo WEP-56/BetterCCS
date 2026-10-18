@@ -176,7 +176,6 @@ pub(crate) fn prepare(
     Ok(Prepared {
         target_login,
         outgoing,
-        ..Prepared::default()
     })
 }
 
@@ -728,7 +727,6 @@ pub(crate) fn preflight(db: &Database, provider: &Provider) -> Result<(), AppErr
 #[cfg(test)]
 mod tests {
     use super::is_proxy_base_url;
-    use serde_json::json;
 
     #[test]
     fn the_proxy_base_url_matches_the_listen_address() {

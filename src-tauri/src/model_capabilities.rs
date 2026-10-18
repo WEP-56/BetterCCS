@@ -112,7 +112,6 @@ fn normalize_model_id(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[test]
     fn gpt_and_unknown_models_remain_unknown_without_declarations() {

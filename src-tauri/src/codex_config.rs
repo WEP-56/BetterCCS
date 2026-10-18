@@ -1809,6 +1809,9 @@ impl std::fmt::Display for CodexBundledModelsError {
 
 /// 本机 Codex 自带的完整模型列表（`codex debug models --bundled`）。和账号无关，版本和
 /// 那个二进制一致。不能用不带 `--bundled` 的版本：那会读到 CC Switch 自己写的目录。
+///
+/// 测试里官方列表由 `CODEX_OPENAI_OFFICIAL_MODELS_OVERRIDE` 直接给定，不走这条路。
+#[cfg_attr(test, allow(dead_code))]
 pub(crate) fn load_codex_bundled_models() -> Result<Vec<Value>, CodexBundledModelsError> {
     first_bundled_catalog(codex_cli_candidates(), |catalog| {
         catalog
