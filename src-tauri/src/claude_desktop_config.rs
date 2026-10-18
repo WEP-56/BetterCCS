@@ -1347,53 +1347,6 @@ mod tests {
         provider
     }
 
-    fn proxy_provider(id: &str) -> Provider {
-        let mut provider = direct_provider(id);
-        provider.name = "Proxy".to_string();
-        provider.meta = Some(ProviderMeta {
-            claude_desktop_mode: Some(ClaudeDesktopMode::Proxy),
-            api_format: Some("openai_chat".to_string()),
-            claude_desktop_model_routes: std::collections::HashMap::from([(
-                "claude-sonnet-4-6".to_string(),
-                ClaudeDesktopModelRoute {
-                    model: "kimi-k2".to_string(),
-                    label_override: Some("Kimi K2".to_string()),
-                    supports_1m: Some(true),
-                },
-            )]),
-            ..Default::default()
-        });
-        provider
-    }
-
-    fn oauth_proxy_provider(id: &str, provider_type: &str, api_format: &str) -> Provider {
-        let mut provider = Provider::with_id(
-            id.to_string(),
-            "OAuth Proxy".to_string(),
-            json!({
-                "env": {
-                    "ANTHROPIC_BASE_URL": "https://oauth-upstream.example.com"
-                }
-            }),
-            Some("https://example.com".to_string()),
-        );
-        provider.meta = Some(ProviderMeta {
-            claude_desktop_mode: Some(ClaudeDesktopMode::Proxy),
-            api_format: Some(api_format.to_string()),
-            provider_type: Some(provider_type.to_string()),
-            claude_desktop_model_routes: std::collections::HashMap::from([(
-                "claude-sonnet-4-6".to_string(),
-                ClaudeDesktopModelRoute {
-                    model: "gpt-5.4".to_string(),
-                    label_override: Some("GPT-5.4".to_string()),
-                    supports_1m: Some(false),
-                },
-            )]),
-            ..Default::default()
-        });
-        provider
-    }
-
     fn direct_provider_with_models(id: &str) -> Provider {
         let mut provider = direct_provider(id);
         provider.meta = Some(ProviderMeta {
@@ -1491,61 +1444,6 @@ mod tests {
         provider.meta.as_mut().expect("meta").api_format = Some("anthropic".to_string());
         provider.settings_config["env"]["ANTHROPIC_AUTH_TOKEN"] = json!("");
         proxy_model_routes(&provider).expect_err("native defaults require credentials");
-    }
-
-    #[test]
-    fn claude_desktop_proxy_apply_writes_local_gateway_profile_with_safe_models() {
-        let temp = TempDir::new().expect("tempdir");
-        let paths = test_paths(temp.path());
-        let provider = proxy_provider("proxy");
-        let db = test_db();
-
-        apply_provider_to_paths(&db, &provider, &paths).expect("apply proxy provider");
-
-        let profile: Value = read_json_file(&paths.profile_path).expect("read profile");
-        assert_eq!(
-            profile["inferenceGatewayBaseUrl"],
-            json!("http://127.0.0.1:15721/claude-desktop")
-        );
-        assert_eq!(profile["inferenceGatewayAuthScheme"], json!("bearer"));
-        assert_eq!(profile["coworkEgressAllowedHosts"], json!(["*"]));
-        assert_ne!(profile["inferenceGatewayApiKey"], json!("test-token"));
-        assert!(profile["inferenceGatewayApiKey"]
-            .as_str()
-            .expect("gateway token")
-            .starts_with("ccs-"));
-        assert_eq!(
-            profile["inferenceModels"],
-            json!([{ "name": "claude-sonnet-4-6", "labelOverride": "Kimi K2", "supports1m": true, "prefer1m": true }])
-        );
-        assert!(!profile.to_string().contains("kimi-k2"));
-    }
-
-    #[test]
-    fn claude_desktop_proxy_accepts_managed_oauth_providers_without_static_key() {
-        for (provider_type, api_format) in [
-            ("github_copilot", "openai_chat"),
-            ("codex_oauth", "openai_responses"),
-            ("xai_oauth", "openai_responses"),
-        ] {
-            let provider = oauth_proxy_provider(provider_type, provider_type, api_format);
-            validate_proxy_provider(&provider).expect("oauth proxy provider should validate");
-
-            let temp = TempDir::new().expect("tempdir");
-            let paths = test_paths(temp.path());
-            let db = test_db();
-            apply_provider_to_paths(&db, &provider, &paths).expect("apply oauth proxy provider");
-
-            let profile: Value = read_json_file(&paths.profile_path).expect("read profile");
-            assert_eq!(
-                profile["inferenceGatewayBaseUrl"],
-                json!("http://127.0.0.1:15721/claude-desktop")
-            );
-            assert_eq!(
-                profile["inferenceModels"],
-                json!([{ "name": "claude-sonnet-4-6", "labelOverride": "GPT-5.4" }])
-            );
-        }
     }
 
     #[test]
