@@ -2,8 +2,8 @@
 //!
 //! 提供获取、设置和测试全局代理的 Tauri 命令。
 
-use crate::upstream::http_client;
 use crate::store::AppState;
+use crate::upstream::http_client;
 use serde::Serialize;
 use std::net::{Ipv4Addr, SocketAddrV4, TcpStream};
 use std::time::{Duration, Instant};

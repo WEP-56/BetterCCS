@@ -118,7 +118,6 @@ impl CostCalculator {
             total_cost,
         }
     }
-
 }
 
 impl ModelPricing {

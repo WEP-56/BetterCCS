@@ -787,4 +787,3 @@ fn auth_cleanup_failure_is_a_warning() {
         "relay"
     );
 }
-

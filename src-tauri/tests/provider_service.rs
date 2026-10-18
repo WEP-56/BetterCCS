@@ -1733,7 +1733,6 @@ requires_openai_auth = true
     );
 }
 
-
 #[test]
 fn switch_codex_in_direct_mode_replaces_leftover_proxy_placeholders() {
     let _guard = test_mutex().lock().unwrap_or_else(|e| e.into_inner());
@@ -2687,7 +2686,6 @@ fn provider_service_delete_current_provider_returns_error() {
         other => panic!("expected Config/Message error, got {other:?}"),
     }
 }
-
 
 /// 切换写出的 live 文件里有 Key（Codex 的 auth.json 与 config.toml、Claude Code 的
 /// settings.json、Grok Build 的 config.toml），新建或替换时都只给本人读写：普通写入

@@ -252,7 +252,8 @@ impl TrayTexts {
                 texts.used_amount = "Kullanılan: {value}";
                 texts.quota_failed = "Kota bilgisi alınamıyor";
                 texts.quota_failed_login_expired = "Kota bilgisi alınamıyor: oturumun süresi doldu";
-                texts.quota_failed_token_refresh_pending = "Kota bilgisi alınamıyor: token yenilenmesi bekleniyor";
+                texts.quota_failed_token_refresh_pending =
+                    "Kota bilgisi alınamıyor: token yenilenmesi bekleniyor";
                 texts.reset_on_date = "{label} kotası {when} tarihinde sıfırlanır";
                 texts.reset_at_time = "{label} kotası {when} saatinde sıfırlanır";
                 texts.date_format = "%d.%m";
@@ -886,7 +887,8 @@ const MANAGED_OAUTH_PROVIDER_TYPES: &[&str] = &["github_copilot", "codex_oauth",
 /// 官方账号卡（同前端 `isOfficialAccount`）：Codex 早期绑定托管账号的官方卡没有 category，按身份认。
 fn is_official_account(app: &AppType, provider: &Provider) -> bool {
     provider.category.as_deref() == Some("official")
-        || (*app == AppType::Codex && crate::upstream::providers::is_codex_official_provider(provider))
+        || (*app == AppType::Codex
+            && crate::upstream::providers::is_codex_official_provider(provider))
 }
 
 /// Codex / Grok Build 配置里当前供应商的 `wire_api`；TOML 读不懂时退回唯一的一条赋值。
@@ -1013,7 +1015,6 @@ impl AppSnapshot {
         let id = self.current_id.as_deref()?;
         self.providers.iter().find(|p| p.id == id)
     }
-
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1602,10 +1603,15 @@ fn collect_snapshots(
 
     let mut snapshots = Vec::new();
     for app in TRAY_APPS.iter().filter(|app| visible_apps.is_visible(app)) {
-        snapshots.push(collect_app_snapshot(app_state, texts, &settings, app, &profiles)?);
+        snapshots.push(collect_app_snapshot(
+            app_state, texts, &settings, app, &profiles,
+        )?);
     }
 
-    let visible: Vec<AppType> = snapshots.iter().map(|snapshot| snapshot.app.clone()).collect();
+    let visible: Vec<AppType> = snapshots
+        .iter()
+        .map(|snapshot| snapshot.app.clone())
+        .collect();
     let problems = collect_problems(&visible);
     mark_attention(&mut snapshots, &problems);
     Ok((snapshots, problems))
@@ -3180,8 +3186,7 @@ mod tests {
     #[test]
     fn top_level_order_is_open_apps_lightweight_website_quit() {
         let apps = [
-            snapshot(AppType::Claude, vec![entry("kimi", "Kimi For Coding")],
-            ),
+            snapshot(AppType::Claude, vec![entry("kimi", "Kimi For Coding")]),
             snapshot(AppType::GrokBuild, vec![]),
         ];
         let menu = model(&[], &apps);
@@ -3203,11 +3208,9 @@ mod tests {
         assert!(matches!(&menu[8], TrayEntry::Item { id, .. } if id == "quit"));
     }
 
-
     #[test]
     fn quota_title_and_almost_out_suffix_on_the_app_row() {
-        let mut app = snapshot(AppType::Claude, vec![entry("official", "Claude Official")],
-        );
+        let mut app = snapshot(AppType::Claude, vec![entry("official", "Claude Official")]);
         let quota = make_quota(
             "claude",
             true,
@@ -3223,8 +3226,7 @@ mod tests {
     #[test]
     fn app_row_title_writes_every_tier_including_the_roomy_five_hour_one() {
         // #8011：火山三档里 5 小时剩得最多，只留剩余最少两档时它总被挤掉。
-        let mut app = snapshot(AppType::Claude, vec![entry("volc", "火山方舟")],
-        );
+        let mut app = snapshot(AppType::Claude, vec![entry("volc", "火山方舟")]);
         let volcengine = usage_result(
             true,
             vec![
@@ -3242,8 +3244,7 @@ mod tests {
 
     #[test]
     fn projects_live_inside_the_app_submenu() {
-        let mut app = snapshot(AppType::Codex, vec![entry("deepseek", "DeepSeek")],
-        );
+        let mut app = snapshot(AppType::Codex, vec![entry("deepseek", "DeepSeek")]);
         app.profiles = Some(ProfileSection {
             scope: "codex",
             items: vec![
@@ -3297,7 +3298,6 @@ mod tests {
                 if id == "lightweight_mode" && text == "Lightweight mode")));
     }
 
-
     #[test]
     fn problem_dot_sits_bottom_right_with_a_clear_ring() {
         let size = 72u32;
@@ -3328,7 +3328,6 @@ mod tests {
         let broken = Image::new_owned(vec![1, 2, 3], 4, 4);
         assert_eq!(icon_with_problem_dot(&broken, false).rgba(), &[1, 2, 3]);
     }
-
 
     #[test]
     fn feedback_goes_away_after_the_menu_showed_it_or_two_minutes() {
@@ -3402,5 +3401,4 @@ mod tests {
             serde_json::json!({"app": "codex", "intent": "needsRoute", "providerId": "p1"})
         );
     }
-
 }

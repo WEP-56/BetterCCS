@@ -267,8 +267,7 @@ pub fn import_default_config(state: State<'_, AppState>, app: String) -> Result<
 pub async fn get_claude_desktop_status(
     state: State<'_, AppState>,
 ) -> Result<crate::claude_desktop_config::ClaudeDesktopStatus, String> {
-    crate::claude_desktop_config::get_status(state.db.as_ref())
-        .map_err(|e| e.to_string())
+    crate::claude_desktop_config::get_status(state.db.as_ref()).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

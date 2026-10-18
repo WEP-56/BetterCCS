@@ -1289,7 +1289,6 @@ mod tests {
         );
     }
 
-
     #[tokio::test]
     #[serial]
     async fn scrub_gemini_removes_leaked_credentials_from_snippet_and_providers() {
@@ -1949,7 +1948,6 @@ command = "legacy-cmd"
             "a user-set web_search value is a shareable preference, got: {extracted}"
         );
     }
-
 
     #[test]
     #[serial]
@@ -2767,7 +2765,6 @@ wire_api = "responses"
         });
     }
 
-
     fn seed_codex_recovery_accounts(state: &AppState) {
         tauri::async_runtime::block_on(async {
             for (id, user) in [("acct-old", "old-user"), ("acct-new", "new-user")] {
@@ -2974,7 +2971,6 @@ wire_api = "responses"
             });
         }
     }
-
 
     #[test]
     #[serial]
@@ -4046,7 +4042,6 @@ wire_api = "responses"
         });
     }
 
-
     #[test]
     #[serial]
     fn managed_codex_switch_db_current_failure_rolls_forward_on_recovery() {
@@ -4198,7 +4193,6 @@ wire_api = "responses"
             );
         });
     }
-
 }
 
 impl ProviderService {
@@ -4452,9 +4446,8 @@ impl ProviderService {
         if app_type == AppType::Mcode {
             // The key is user-chosen, and saving would overwrite an existing row or live node.
             // Adds are serialized here; the live write repeats the check under MCode's file lock.
-            let _guard = futures::executor::block_on(
-                state.switch_locks.lock_for_app(app_type.as_str()),
-            );
+            let _guard =
+                futures::executor::block_on(state.switch_locks.lock_for_app(app_type.as_str()));
             if state
                 .db
                 .get_provider_by_id(&provider.id, "mcode")?
@@ -4539,7 +4532,6 @@ impl ProviderService {
 
         Ok(true)
     }
-
 
     /// 供应商编辑器底部配置的显示内容（Claude Code、Codex、Gemini CLI、Grok Build）：切到
     /// 这个供应商之后配置文件会是什么样，以及行里不随切换生效的字段。`category` 用来认出
@@ -4681,7 +4673,6 @@ impl ProviderService {
         }
     }
 
-
     /// 编辑器保存先存行、再写 live（`written`）。写 live 失败时：文件已经发布、只是落定
     /// 状态失败的，pending 会在下次操作或启动时补完，行要留着；还没发布就失败（没有
     /// pending），撤回刚存的行。
@@ -4710,7 +4701,6 @@ impl ProviderService {
         }
         Err(error)
     }
-
 
     /// Update a provider
     pub fn update(
@@ -5150,7 +5140,6 @@ impl ProviderService {
         }
         result
     }
-
 
     /// Normal switch flow (non-proxy mode)
     fn switch_normal(
@@ -7013,8 +7002,7 @@ impl ProviderService {
                 key_fields.then_some((existing.as_ref(), &provider)),
                 set_pointer,
             ),
-        }
-;
+        };
         Self::keep_row_if_written(state, &app_type, &provider.id, existing.as_ref(), written)
     }
 
@@ -7091,8 +7079,7 @@ impl ProviderService {
 
         state.db.save_provider(app_type.as_str(), &provider)?;
         let written =
-            claude_editor::write_live(state.db.as_ref(), &plan, editor.on_conflict, key_fields)
-        ;
+            claude_editor::write_live(state.db.as_ref(), &plan, editor.on_conflict, key_fields);
         Self::keep_row_if_written(state, &app_type, &provider.id, existing.as_ref(), written)
     }
 

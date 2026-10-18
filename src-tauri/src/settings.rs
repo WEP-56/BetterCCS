@@ -1223,7 +1223,6 @@ pub fn unify_codex_session_history() -> bool {
         .unify_codex_session_history
 }
 
-
 // ===== 当前供应商管理函数 =====
 
 /// 获取指定应用类型的当前供应商 ID（从本地 settings 读取）

@@ -172,12 +172,11 @@ impl StreamCheckService {
             AppType::OpenClaw => Self::extract_openclaw_base_url(provider),
             AppType::Hermes => Self::extract_hermes_base_url(provider),
             AppType::Pi => crate::pi_config::provider_base_url(&provider.settings_config),
-            _ => Ok(Self::configured_base_url(app_type, provider).ok_or_else(|| {
-                AppError::Message(format!(
-                    "{} 的供应商配置里没有 base_url",
-                    app_type.as_str()
-                ))
-            })?),
+            _ => Ok(
+                Self::configured_base_url(app_type, provider).ok_or_else(|| {
+                    AppError::Message(format!("{} 的供应商配置里没有 base_url", app_type.as_str()))
+                })?,
+            ),
         }
     }
 

@@ -65,10 +65,7 @@ pub(crate) fn configured_proxy_base_url(db: &Database) -> String {
     let (address, port) = db.get_proxy_client_endpoint_sync();
     // 端口 0 是「系统分配」，旧版本用默认端口写进客户端文件。
     let port = if port == 0 { 15721 } else { port };
-    format!(
-        "{}/v1",
-        crate::mode::legacy::origin(&address, port)
-    )
+    format!("{}/v1", crate::mode::legacy::origin(&address, port))
 }
 
 /// `config_text` 是不是代理的官方路由（指向本地代理，但不带占位 Key）。
@@ -178,7 +175,6 @@ pub(crate) fn prepare(
         outgoing,
     })
 }
-
 
 /// live 的 `config.toml`（读不出时为空）。
 pub(crate) fn read_config_text() -> String {
@@ -443,12 +439,14 @@ pub(crate) fn plan(
     };
 
     let catalog = match (provider, &projection) {
-        (Some(provider), Some(projection)) => plan_codex_model_catalog(
-            &provider.settings_config,
-            &projection.catalog_input_text(),
-            crate::upstream::providers::resolve_codex_catalog_tool_profile(provider),
-        )?
-        .catalog,
+        (Some(provider), Some(projection)) => {
+            plan_codex_model_catalog(
+                &provider.settings_config,
+                &projection.catalog_input_text(),
+                crate::upstream::providers::resolve_codex_catalog_tool_profile(provider),
+            )?
+            .catalog
+        }
         _ => None,
     };
     let catalog = catalog
@@ -479,7 +477,6 @@ pub(crate) fn plan(
         official_logins: facts.official_logins,
     })
 }
-
 
 /// 读到的登录暂存。
 struct LoadedStash {

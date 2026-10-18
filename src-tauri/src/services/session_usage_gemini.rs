@@ -17,13 +17,13 @@
 use crate::database::{lock_conn, Database};
 use crate::error::AppError;
 use crate::gemini_config::get_gemini_dir;
-use crate::upstream::usage::calculator::{CostCalculator, ModelPricing};
-use crate::upstream::usage::parser::TokenUsage;
 use crate::services::session_usage::{
     metadata_modified_nanos, update_sync_state, SessionSyncResult,
 };
 use crate::services::usage_stats::{find_model_pricing, should_skip_session_insert, DedupKey};
 use crate::session_manager::providers::gemini::{is_session_file, parse_session_document};
+use crate::upstream::usage::calculator::{CostCalculator, ModelPricing};
+use crate::upstream::usage::parser::TokenUsage;
 use rust_decimal::Decimal;
 use std::fs;
 use std::path::{Path, PathBuf};

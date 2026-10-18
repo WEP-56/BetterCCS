@@ -34,11 +34,11 @@ mod pi_config;
 mod prompt;
 mod prompt_files;
 mod provider;
-mod upstream;
 mod services;
 mod session_manager;
 mod settings;
 mod store;
+mod upstream;
 
 mod tray;
 mod usage_events;

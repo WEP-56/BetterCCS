@@ -24,7 +24,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
-
 /// GitHub OAuth 客户端 ID（VS Code）- 用于 github.com
 const GITHUB_CLIENT_ID: &str = "Iv1.b507a08c87ecfe98";
 
@@ -139,7 +138,6 @@ pub const COPILOT_EDITOR_VERSION: &str = "vscode/1.110.1";
 pub const COPILOT_PLUGIN_VERSION: &str = "copilot-chat/0.38.2";
 pub const COPILOT_USER_AGENT: &str = "GitHubCopilotChat/0.38.2";
 pub const COPILOT_API_VERSION: &str = "2025-10-01";
-
 
 /// Copilot 使用量响应
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1687,7 +1685,6 @@ mod tests {
             })
         );
     }
-
 
     #[test]
     fn test_copilot_token_expiry() {

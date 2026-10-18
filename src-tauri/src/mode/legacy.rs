@@ -92,11 +92,15 @@ fn grok_taken_over(config: &Value) -> bool {
     config
         .get("config")
         .and_then(Value::as_str)
-        .is_some_and(|toml| crate::grok_config::has_proxy_placeholder(toml, PROXY_TOKEN_PLACEHOLDER))
+        .is_some_and(|toml| {
+            crate::grok_config::has_proxy_placeholder(toml, PROXY_TOKEN_PLACEHOLDER)
+        })
 }
 
 fn read_json(path: &std::path::Path) -> Option<Value> {
-    crate::config::read_json_file(path).ok().filter(Value::is_object)
+    crate::config::read_json_file(path)
+        .ok()
+        .filter(Value::is_object)
 }
 
 fn read_gemini() -> Option<Value> {

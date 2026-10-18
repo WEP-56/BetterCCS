@@ -12,9 +12,9 @@ use crate::app_config::AppType;
 use crate::config::{get_claude_settings_path, read_json_file};
 use crate::error::AppError;
 use crate::provider::Provider;
-use crate::upstream::providers::codex_oauth_auth::{CodexLiveAuthSwitchGuard, CodexOAuthManager};
 use crate::services::mcp::McpService;
 use crate::store::AppState;
+use crate::upstream::providers::codex_oauth_auth::{CodexLiveAuthSwitchGuard, CodexOAuthManager};
 
 use super::normalize_claude_models_in_value;
 

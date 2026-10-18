@@ -643,7 +643,6 @@ fn switching_profile_autosaves_previous_profile_state() {
     assert_eq!(payload_b.prompts.claude.as_deref(), Some("pr1"));
 }
 
-
 #[cfg(any(target_os = "macos", windows))]
 #[test]
 fn claude_desktop_profile_scope_is_independent() {

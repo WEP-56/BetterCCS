@@ -1,9 +1,9 @@
 //! xAI OAuth state and xAI-specific commands.
 
-use crate::upstream::providers::xai_oauth_auth::XaiOAuthManager;
-use crate::upstream::providers::XAI_API_BASE_URL;
 use crate::services::model_fetch::FetchedModel;
 use crate::services::subscription::{CredentialStatus, SubscriptionQuota};
+use crate::upstream::providers::xai_oauth_auth::XaiOAuthManager;
+use crate::upstream::providers::XAI_API_BASE_URL;
 use serde::Deserialize;
 use std::sync::Arc;
 use std::time::Duration;
