@@ -44,11 +44,9 @@ use crate::mode::state::{Contract, PendingTarget};
 use crate::provider::Provider;
 use crate::upstream::providers::codex_oauth_auth::CodexLiveAuthSwitchGuard;
 use crate::upstream::providers::codex_oauth_auth::CodexOAuthManager;
-use crate::services::subscription::CodexKeychainLogin;
 use std::sync::Arc;
 
 use super::codex_login::{self, AuthInput, AuthPlan, AuthTarget, LoginStash, STASH_FILENAME};
-use super::codex_official_models::{self, NativeRows, OfficialLogin, OfficialSkip};
 use super::ProviderService;
 
 fn app() -> &'static str {
@@ -129,18 +127,13 @@ impl<'a> Owner<'a> {
     }
 }
 
-/// 拿写锁之前准备好的托管账号凭据和官方模型行。
+/// 拿写锁之前准备好的托管账号凭据。
 #[derive(Default)]
 pub(crate) struct Prepared {
     /// 目标托管账号和它的登录。
     target_login: Option<(String, Value)>,
     /// 要切走的托管账号，和采纳 CLI 轮换后记下的盘上 refresh token。
     outgoing: Option<(String, CodexLiveAuthSwitchGuard)>,
-    /// 官方做路由、又发布了 Stack 模型时目录里的官方行（[`prepare_official_rows`]）。
-    native: Option<NativeRows>,
-    /// 钥匙串里 Codex 的登录，在拿锁之前读好（见 [`prepare_official_rows`]）：钥匙串不归
-    /// 写锁管，`security` 还可能弹出授权对话框，不能让写锁等着用户点。锁里没有就当读不出。
-    keychain: Option<CodexKeychainLogin>,
 }
 
 fn target_provider<'a>(target: &Target<'a>) -> Option<&'a Provider> {
@@ -201,78 +194,6 @@ pub(crate) async fn off_runtime<T: Send + 'static>(
         .map_err(|error| AppError::Message(format!("后台线程异常退出: {error}")))
 }
 
-
-/// 按未加锁读到的内容预测这次操作之后 Codex 会用的登录（能取官方列表的才是 `Ok`，否则带
-/// 着取不到的原因）。钥匙串没预先读过（[`prepare_official_rows`] 之外的调用方）就在用到时
-/// 读，调用方要在阻塞线程里。
-pub(crate) fn predicted_official_login(
-    db: &Database,
-    owner: &Owner<'_>,
-    target: &Target<'_>,
-    prepared: &Prepared,
-) -> Result<Result<OfficialLogin, OfficialSkip>, AppError> {
-    // 先按没有官方行算一遍，拿到这次对 auth.json 的去向（目录在第二遍才算）。
-    let planned = plan(db, owner, target, prepared)?;
-    let live = read_current(&get_codex_auth_path())
-        .ok()
-        .flatten()
-        .map(|bytes| serde_json::from_slice::<Value>(&bytes).unwrap_or(Value::Null));
-    let stash = load_stash(
-        &DeviceStore::for_device(),
-        &planned.official_logins,
-        live.as_ref(),
-    )
-    .stash;
-    let auth_plan = codex_login::plan(AuthInput {
-        live: live.as_ref(),
-        live_is_managed: live_is_managed(prepared, live.as_ref()),
-        third_party_keys: &planned.retired_keys,
-        leaving_official: planned.leaving_official.as_ref(),
-        target: auth_target(&planned.auth),
-        stash,
-    });
-    let keychain = || {
-        prepared
-            .keychain
-            .clone()
-            .unwrap_or_else(codex_official_models::keychain_login)
-    };
-    Ok(
-        login_after(&auth_plan, live.as_ref(), &read_config_text(), keychain)
-            .ok_or(OfficialSkip::NoLogin)
-            .and_then(|auth| OfficialLogin::of(&auth)),
-    )
-}
-
-/// 操作之后 Codex 实际会用的登录，按 `cli_auth_credentials_store`：file 看操作之后的
-/// `auth.json`；keyring 看系统钥匙串（CC Switch 不改它）；auto 钥匙串里有就用它，确定
-/// 没有才同 file（读不出钥匙串时 Codex 可能用着另一个登录，`auth.json` 不能顶替）；
-/// ephemeral 和认不出的没有。`keychain` 只在要看钥匙串时调用。
-fn login_after(
-    auth_plan: &AuthPlan,
-    live: Option<&Value>,
-    config_text: &str,
-    keychain: impl FnOnce() -> CodexKeychainLogin,
-) -> Option<Value> {
-    let from_file = || match &auth_plan.auth {
-        None => live.cloned(),
-        Some(None) => None,
-        Some(Some(auth)) => Some(auth.clone()),
-    };
-    match codex_config_auth_store_mode(config_text) {
-        CodexAuthStoreMode::File => from_file(),
-        CodexAuthStoreMode::Keyring => match keychain() {
-            CodexKeychainLogin::Found(login) => Some(login),
-            CodexKeychainLogin::Missing | CodexKeychainLogin::Unknown => None,
-        },
-        CodexAuthStoreMode::Auto => match keychain() {
-            CodexKeychainLogin::Found(login) => Some(login),
-            CodexKeychainLogin::Missing => from_file(),
-            CodexKeychainLogin::Unknown => None,
-        },
-        CodexAuthStoreMode::Ephemeral | CodexAuthStoreMode::Unknown => None,
-    }
-}
 
 /// live 的 `config.toml`（读不出时为空）。
 pub(crate) fn read_config_text() -> String {
@@ -470,8 +391,6 @@ pub(crate) struct Planned {
     leaving_official: Option<Value>,
     retired_keys: Vec<String>,
     official_logins: Vec<Value>,
-    /// 目录里的官方行取自哪个登录的官方列表：拿写锁后和实际的目标登录核对。
-    native_identity: Option<String>,
 }
 
 impl Planned {
@@ -573,11 +492,6 @@ pub(crate) fn plan(
         leaving_official,
         retired_keys: facts.third_party_keys,
         official_logins: facts.official_logins,
-        native_identity: prepared
-            .native
-            .as_ref()
-            .and_then(NativeRows::identity)
-            .map(str::to_string),
     })
 }
 
@@ -726,27 +640,6 @@ pub(crate) fn run_with_edits(
         stash,
     });
     let config_text = read_config_text();
-    // 目录里的官方行是按拿锁前预测的登录取的：实际的目标登录换了人（Codex 恰好重新登录、
-    // settle 补完了上一次操作），就停下，什么都不写。不能换成别的来源：目录已经算进契约。
-    // 钥匙串用取完官方行后读到的那次（见 `prepare_official_rows`），不在锁里读。
-    if let Some(expected) = &planned.native_identity {
-        let keychain = || {
-            prepared
-                .keychain
-                .clone()
-                .unwrap_or(CodexKeychainLogin::Unknown)
-        };
-        let actual = login_after(&auth_plan, live_auth.as_ref(), &config_text, keychain)
-            .and_then(|auth| OfficialLogin::of(&auth).ok())
-            .map(|login| login.identity);
-        if actual.as_deref() != Some(expected.as_str()) {
-            return Err(AppError::localized(
-                "codex.official_models_login_changed",
-                "Codex 的登录在这次操作期间变了，官方模型列表对不上新的登录。本次没有写入任何文件，请重试",
-                "The Codex login changed during this operation, so the official model list no longer matches it. Nothing was written; please try again",
-            ));
-        }
-    }
     // 暂存坏了只当它是空的读；要往里存登录（`auth.json` 里的登录要被删掉或换掉）时照写
     // 会覆盖掉里面原有的登录，停下。
     if let (Some(err), Some(_)) = (&stash_unreadable, &auth_plan.stash) {
