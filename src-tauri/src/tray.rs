@@ -128,29 +128,15 @@ pub struct TrayTexts {
     pub quota_used: bool,
 }
 
-/// 将系统区域标识映射为托盘支持的语言码。
+/// 将系统区域标识映射为托盘语言码。
 ///
-/// 镜像前端 `i18n/getInitialLanguage` 的判定顺序，确保首次安装
-/// （`settings.language` 尚未写入）时托盘语言与界面语言一致：
-/// 繁中系统（zh-TW/HK/MO/Hant）→ `zh-TW`，其余 zh → `zh`，
-/// 日文 → `ja`，土耳其文 → `tr`，英文 → `en`，其他语言回退到 `en`，
-/// 区域为空时回退到 `zh`（与前端默认一致）。
+/// 镜像前端 `i18n` 的判定顺序，确保首次安装（`settings.language` 尚未写入）时
+/// 托盘语言与界面语言一致：中文（含各种区域和繁体写法）→ `zh`，
+/// 其余认得出的语言 → `en`，区域为空时回退到 `zh`（与前端默认一致）。
 fn map_locale_to_tray_language(locale: &str) -> &'static str {
     let locale = locale.to_lowercase();
-    if locale == "zh" {
+    if locale.starts_with("zh") {
         "zh"
-    } else if locale.starts_with("zh-tw")
-        || locale.starts_with("zh-hk")
-        || locale.starts_with("zh-mo")
-        || locale.starts_with("zh-hant")
-    {
-        "zh-TW"
-    } else if locale.starts_with("zh") {
-        "zh"
-    } else if locale.starts_with("ja") {
-        "ja"
-    } else if locale.starts_with("tr") {
-        "tr"
     } else if locale.is_empty() {
         "zh"
     } else {
@@ -210,141 +196,6 @@ impl TrayTexts {
                 reset_on_date: "{label} quota resets {when}",
                 reset_at_time: "{label} quota resets at {when}",
                 date_format: "%b %-d",
-                quota_used: false,
-            },
-            // 土耳其语是社区翻译：从英文起步再覆盖已翻译的项，之后新增的托盘项
-            // 在有人翻译前显示英文，而不是让所有改托盘的提交都必须补土耳其语。
-            "tr" => {
-                let mut texts = Self::from_language("en");
-                texts.show_main = "CC Switch'i aç";
-                texts.open_website = "Resmî web sitesini aç";
-                texts.lightweight_mode = "Hafif mod";
-                texts.quit = "CC Switch'ten çık";
-                texts.projects_label = "Projeler";
-                texts.no_project_label = "Proje yok";
-                texts.header_direct = "Doğrudan";
-                texts.needs_routing_suffix = " (yönlendirme gerekir)…";
-                texts.open_app_page = "{app} sayfasını aç";
-                texts.add_provider = "Sağlayıcı ekle…";
-                texts.almost_out = "bitmek üzere";
-                texts.needs_attention = "ilgilenilmesi gerekiyor";
-                texts.problem_switch_failed = "{app} geçiş yapamadı: {reason}";
-                texts.problem_more = "{count} sorun daha var — görmek için CC Switch'i açın";
-                texts.tooltip_problem = "CC Switch · İlgilenilmesi gerekiyor: {problem}";
-                texts.feedback_switched = "{app}, {name} sağlayıcısına geçti. Uygulamak için {app} uygulamasını yeniden başlatın";
-                texts.feedback_profile = "{name} projesi {app} uygulamasına uygulandı";
-                texts.tier_five_hour = "5 saatlik";
-                texts.tier_weekly = "Haftalık";
-                texts.tier_fable = "Fable";
-                texts.tier_monthly = "Aylık";
-                texts.tier_thirty_day = "30 günlük";
-                texts.tier_credits = "Krediler";
-                texts.tier_gemini_pro = "Pro";
-                texts.tier_gemini_flash = "Flash";
-                texts.tier_gemini_flash_lite = "Flash Lite";
-                texts.tier_premium = "Premium";
-                texts.tier_left = "{label} %{value} kaldı";
-                texts.tier_used = "{label} %{value} kullanıldı";
-                texts.tier_used_up = "{label} tükendi";
-                texts.balance = "Bakiye {value}";
-                texts.balance_used_up = "Bakiye tükendi";
-                texts.plan_expired = "Planın süresi doldu";
-                texts.used_amount = "Kullanılan: {value}";
-                texts.quota_failed = "Kota bilgisi alınamıyor";
-                texts.quota_failed_login_expired = "Kota bilgisi alınamıyor: oturumun süresi doldu";
-                texts.quota_failed_token_refresh_pending =
-                    "Kota bilgisi alınamıyor: token yenilenmesi bekleniyor";
-                texts.reset_on_date = "{label} kotası {when} tarihinde sıfırlanır";
-                texts.reset_at_time = "{label} kotası {when} saatinde sıfırlanır";
-                texts.date_format = "%d.%m";
-                texts
-            }
-            "ja" => Self {
-                show_main: "CC Switch を開く",
-                open_website: "公式サイトを開く",
-                lightweight_mode: "軽量モード",
-                quit: "CC Switch を終了",
-                projects_label: "プロジェクト",
-                no_project_label: "プロジェクトを使用しない",
-                header_direct: "直接接続",
-                needs_routing_suffix: "（ルーティングが必要）…",
-                open_app_page: "{app} のページを開く",
-                add_provider: "プロバイダーを追加…",
-                almost_out: "残りわずか",
-                needs_attention: "対応が必要",
-                problem_switch_failed: "{app} を切り替えられませんでした：{reason}",
-                problem_more:
-                    "ほかに {count} 件の問題があります。CC Switch を開いて確認してください",
-                tooltip_problem: "CC Switch · 対応が必要：{problem}",
-                feedback_switched:
-                    "{app} を {name} に切り替えました。反映するには {app} を再起動してください",
-                feedback_profile: "プロジェクト「{name}」を {app} に適用しました",
-                tier_five_hour: "5時間",
-                tier_weekly: "週間",
-                tier_fable: "Fable",
-                tier_monthly: "月間",
-                tier_thirty_day: "30日間",
-                tier_credits: "クレジット",
-                tier_gemini_pro: "Pro",
-                tier_gemini_flash: "Flash",
-                tier_gemini_flash_lite: "Flash Lite",
-                tier_premium: "プレミアム",
-                tier_left: "{label} 残り {value}%",
-                tier_used: "{label} 使用済み {value}%",
-                tier_used_up: "{label} 使い切り",
-                balance: "残高 {value}",
-                balance_used_up: "残高なし",
-                plan_expired: "プラン期限切れ",
-                used_amount: "使用 {value}",
-                quota_failed: "残量を取得できません",
-                quota_failed_login_expired: "残量を取得できません：ログインの期限切れ",
-                quota_failed_token_refresh_pending: "残量を取得できません：トークンの更新待ち",
-                reset_on_date: "{label}の枠は {when} にリセット",
-                reset_at_time: "{label}の枠は {when} にリセット",
-                date_format: "%-m月%-d日",
-                quota_used: false,
-            },
-            "zh-TW" => Self {
-                show_main: "開啟 CC Switch",
-                open_website: "開啟官方網站",
-                lightweight_mode: "輕量模式",
-                quit: "退出 CC Switch",
-                projects_label: "專案",
-                no_project_label: "不使用專案",
-                header_direct: "直連",
-                needs_routing_suffix: "（需要路由）…",
-                open_app_page: "開啟 {app} 頁面",
-                add_provider: "新增供應商…",
-                almost_out: "快用完",
-                needs_attention: "需要處理",
-                problem_switch_failed: "{app} 沒切換成功：{reason}",
-                problem_more: "還有 {count} 個問題，開啟 CC Switch 查看",
-                tooltip_problem: "CC Switch · 需要處理：{problem}",
-                feedback_switched: "{app} 已切換到 {name}，重新啟動 {app} 後生效",
-                feedback_profile: "已把專案「{name}」套用到 {app}",
-                tier_five_hour: "5 小時",
-                tier_weekly: "每週",
-                tier_fable: "Fable",
-                tier_monthly: "每月",
-                tier_thirty_day: "30 天",
-                tier_credits: "額度",
-                tier_gemini_pro: "Pro",
-                tier_gemini_flash: "Flash",
-                tier_gemini_flash_lite: "Flash Lite",
-                tier_premium: "進階請求",
-                tier_left: "{labelSp}剩餘 {value}%",
-                tier_used: "{labelSp}已用 {value}%",
-                tier_used_up: "{labelSp}已用完",
-                balance: "餘額 {value}",
-                balance_used_up: "餘額已用完",
-                plan_expired: "方案已過期",
-                used_amount: "已使用 {value}",
-                quota_failed: "額度沒查到",
-                quota_failed_login_expired: "額度沒查到：登入已過期",
-                quota_failed_token_refresh_pending: "額度沒查到：權杖待重新整理",
-                reset_on_date: "{labelSp}額度 {when}重置",
-                reset_at_time: "{labelSp}額度 {when} 重置",
-                date_format: "%-m 月 %-d 日",
                 quota_used: false,
             },
             _ => Self {
@@ -2498,24 +2349,6 @@ mod tests {
     }
 
     #[test]
-    fn locale_maps_traditional_chinese_variants_to_zh_tw() {
-        for locale in [
-            "zh-TW",
-            "zh-HK",
-            "zh-MO",
-            "zh-Hant",
-            "zh-Hant-TW",
-            "zh-hant-hk",
-        ] {
-            assert_eq!(
-                map_locale_to_tray_language(locale),
-                "zh-TW",
-                "expected {locale} -> zh-TW"
-            );
-        }
-    }
-
-    #[test]
     fn locale_maps_simplified_chinese_variants_to_zh() {
         for locale in ["zh", "zh-CN", "zh-SG", "zh-Hans", "zh-Hans-CN"] {
             assert_eq!(
@@ -2527,11 +2360,7 @@ mod tests {
     }
 
     #[test]
-    fn locale_maps_japanese_and_english() {
-        assert_eq!(map_locale_to_tray_language("tr-TR"), "tr");
-        assert_eq!(map_locale_to_tray_language("tr"), "tr");
-        assert_eq!(map_locale_to_tray_language("ja-JP"), "ja");
-        assert_eq!(map_locale_to_tray_language("ja"), "ja");
+    fn locale_maps_english() {
         assert_eq!(map_locale_to_tray_language("en-US"), "en");
         assert_eq!(map_locale_to_tray_language("en"), "en");
     }
@@ -2553,13 +2382,9 @@ mod tests {
     fn direct_header_and_flags_read_the_same_in_every_language() {
         let zh = zh();
         assert_eq!(zh.header_direct, "直连");
-        let tw = TrayTexts::from_language("zh-TW");
-        assert_eq!(tw.header_direct, "直連");
         let en = en();
         assert_eq!(en.header_direct, "Direct");
-        let ja = TrayTexts::from_language("ja");
-        assert_eq!(ja.header_direct, "直接接続");
-        for texts in [zh, tw, en, ja] {
+        for texts in [zh, en] {
             // 托盘不用 emoji 表达状态（Windows 菜单里彩色 emoji 会变成单色轮廓）。
             for text in [texts.almost_out, texts.needs_attention] {
                 assert!(text.chars().all(|c| (c as u32) < 0x1F000), "{text}");
@@ -2637,11 +2462,6 @@ mod tests {
         assert_eq!(
             title(format_subscription_quota(&en(), &quota)),
             Some(("5-hour 69% left · Weekly 5% left".to_string(), true))
-        );
-        let tw = TrayTexts::from_language("zh-TW");
-        assert_eq!(
-            sub_title(&tw, &quota).as_deref(),
-            Some("5 小時剩餘 69% · 每週剩餘 5%")
         );
     }
 
