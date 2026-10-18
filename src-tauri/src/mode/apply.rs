@@ -19,7 +19,6 @@ use crate::live::project::claude::{direct_patch, ClaudeProjection};
 use crate::live::project::gemini::GeminiProjection;
 use crate::live::project::grok::GrokProjection;
 use crate::provider::Provider;
-use crate::services::provider::codex_client_catalog;
 use crate::services::provider::codex_direct::{self, Owner};
 use crate::services::provider::{claude_direct, gemini_direct, grok_direct};
 use crate::store::AppState;
@@ -294,8 +293,6 @@ pub async fn startup(state: &AppState) {
             log::error!("启动时清理 {} 的本地路由接管态失败: {error}", app.as_str());
         }
     }
-    // 记一次新启动的 Codex 会读到的目录：兜住启动时补完的操作和 CC Switch 没开时的外部修改。
-    codex_client_catalog::observe(&DeviceStore::for_device());
 }
 
 async fn reset_legacy(state: &AppState, app: &AppType) -> Result<(), String> {
