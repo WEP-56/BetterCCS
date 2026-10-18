@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  changelogUrl,
   entriesSince,
   entriesUpTo,
   isNewerThanSeen,
   markSeen,
+  releaseNotesUrl,
   resolveWhatsNewLanguage,
   type WhatsNewEntry,
 } from "@/lib/whatsNew";
@@ -12,9 +12,7 @@ import {
 const item = (text: string) => ({
   type: "fix" as const,
   zh: text,
-  "zh-TW": text,
   en: text,
-  ja: text,
 });
 
 // 新到旧，和 WHATS_NEW_ENTRIES 的顺序一致
@@ -81,16 +79,22 @@ describe("seen version", () => {
 });
 
 describe("language and links", () => {
-  it("falls back to English for unknown languages", () => {
-    expect(resolveWhatsNewLanguage("zh-TW")).toBe("zh-TW");
-    expect(resolveWhatsNewLanguage("ja")).toBe("ja");
-    expect(resolveWhatsNewLanguage("fr")).toBe("en");
+  it("reads Chinese as Simplified and everything else as English", () => {
+    expect(resolveWhatsNewLanguage("zh")).toBe("zh");
+    expect(resolveWhatsNewLanguage("zh-TW")).toBe("zh");
+    expect(resolveWhatsNewLanguage("en")).toBe("en");
+    expect(resolveWhatsNewLanguage("ja")).toBe("en");
   });
 
-  it("links to the website changelog, Traditional Chinese uses the zh pages", () => {
-    expect(changelogUrl("en", "4.0.2")).toBe(
-      "https://ccswitch.io/en/changelog/4.0.2",
+  it("links release notes to this fork's releases", () => {
+    expect(releaseNotesUrl()).toBe(
+      "https://github.com/WEP-56/BetterCCS/releases",
     );
-    expect(changelogUrl("zh-TW")).toBe("https://ccswitch.io/zh/changelog");
+    expect(releaseNotesUrl("v4.0.2")).toBe(
+      "https://github.com/WEP-56/BetterCCS/releases/tag/v4.0.2",
+    );
+    expect(releaseNotesUrl("4.0.2")).toBe(
+      "https://github.com/WEP-56/BetterCCS/releases/tag/v4.0.2",
+    );
   });
 });

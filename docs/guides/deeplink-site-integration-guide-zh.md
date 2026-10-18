@@ -1,25 +1,25 @@
-# 在你的网站上放「一键导入 CC Switch」按钮：站长接入指南
+# 在你的网站上放「一键导入 BetterCCS」按钮：站长接入指南
 
 
-如果你是站长，可以通过 CC Switch 让你的用户一键把你的供应商导入到 Claude Code、Codex 等 Agent 应用中使用。
+如果你是站长，可以通过 BetterCCS 让你的用户一键把你的供应商导入到 Claude Code、Codex 等 Agent 应用中使用。
 
-> 适用版本：CC Switch v4.0.10 及以上。文中标了「v4.0.10 起」的行为在更早的版本上不同，差异见文末「兼容旧版本」。本文根据当前代码整理，示例里的域名和 Key 都是假的。
+> 适用版本：BetterCCS v4.0.10 及以上。文中标了「v4.0.10 起」的行为在更早的版本上不同，差异见文末「兼容旧版本」。本文根据当前代码整理，示例里的域名和 Key 都是假的。
 
 ## 这篇写给谁
 
-你运营一个 API 服务（中转站、聚合平台、自建网关都算），想让用户在你的控制台点一下按钮，就把你的地址、Key、模型，以及余额查询，一起加进 CC Switch，不用再手动填表。
+你运营一个 API 服务（中转站、聚合平台、自建网关都算），想让用户在你的控制台点一下按钮，就把你的地址、Key、模型，以及余额查询，一起加进 BetterCCS，不用再手动填表。
 
-这件事靠 `ccswitch://` 深链接完成。用户的系统装了 CC Switch 之后，浏览器点到 `ccswitch://...` 链接会唤起 CC Switch，弹出导入确认框，用户核对后点「导入」。
+这件事靠 `ccswitch://` 深链接完成。用户的系统装了 BetterCCS 之后，浏览器点到 `ccswitch://...` 链接会唤起 BetterCCS，弹出导入确认框，用户核对后点「导入」。
 
 用户手册里的 [深度链接协议](../user-manual/zh/5-faq/5.3-deeplink.md) 是参数速查表；这篇讲站长真正要做的决定：链接怎么生成、哪些东西能带、哪些会被拒绝、怎么让用户导入后直接看到余额。
 
 ## 最快路径
 
-> 你的站是用 New API 或 Sub2API 搭的？两者的 Key 列表里都自带「导入到 CC Switch」按钮，开箱即用，不用自己开发。区别在余额：New API 的链接不带用量查询脚本，用户导入后卡片上看不到余额；Sub2API 的链接带。想补上余额、带上你的图标，或者支持更多应用，再按这篇改。
+> 你的站是用 New API 或 Sub2API 搭的？两者的 Key 列表里都自带「导入到 BetterCCS」按钮，开箱即用，不用自己开发。区别在余额：New API 的链接不带用量查询脚本，用户导入后卡片上看不到余额；Sub2API 的链接带。想补上余额、带上你的图标，或者支持更多应用，再按这篇改。
 
 大多数站长只要做三件事，按顺序读下面几节就够了：
 
-1. 读「先看结论」，再读「供应商链接」里的「最小的一条」「支持哪些应用」「常用参数」，定下给哪些应用生成链接、地址和格式怎么写。可以先在 [在线生成器](https://ccswitch.io/deplink.html) 里填表单生成一条，在自己电脑上点一下，看看确认框长什么样。
+1. 读「先看结论」，再读「供应商链接」里的「最小的一条」「支持哪些应用」「常用参数」，定下给哪些应用生成链接、地址和格式怎么写。可以先在 [上游站点的在线生成工具](https://ccswitch.io/deplink.html) 里填表单生成一条，在自己电脑上点一下，看看确认框长什么样。
 2. 想让用户导入后看到余额，读「用量查询脚本」。NewAPI / OneAPI、Sub2API 系的站有现成脚本，照抄即可。
 3. 读「生成链接的代码」和「把链接放到按钮上」：后端按用户生成链接，前端放按钮。
 
@@ -49,7 +49,7 @@ ccswitch://v1/import?resource=<类型>&<参数>...
 有两层编码，顺序不能反：
 
 1. `config`、`usageScript`、`content` 这类「整段内容」的参数，先把 UTF-8 文本做 **Base64** 编码。标准 Base64 和 URL-safe Base64 都认，末尾的 `=` 可有可无。
-2. 拼进链接时，**所有参数值**再做一次 URL 转义（`application/x-www-form-urlencoded` 规则）。标准 Base64 里的 `+` 必须转成 `%2B`，否则会被解成空格。CC Switch 会尝试把空格还原成 `+`，但别依赖它。
+2. 拼进链接时，**所有参数值**再做一次 URL 转义（`application/x-www-form-urlencoded` 规则）。标准 Base64 里的 `+` 必须转成 `%2B`，否则会被解成空格。BetterCCS 会尝试把空格还原成 `+`，但别依赖它。
 
 `URLSearchParams` 会自动完成第 2 步。手写链接时最常见的错误就是漏了这一步。
 
@@ -57,12 +57,12 @@ ccswitch://v1/import?resource=<类型>&<参数>...
 
 ## 用户点了链接之后
 
-1. 浏览器询问「是否打开 CC Switch」，用户同意后 CC Switch 被唤起（没开着的话会先启动）。
-2. CC Switch 弹出导入确认框，展示链接里的全部内容：地址、打码后的 Key、模型、附带的配置原文、用量查询脚本全文。可疑的内容会标黄提示，例如指向本机或内网的地址、能改变进程加载行为的环境变量（`NODE_OPTIONS`、`LD_PRELOAD` 之类）、用 shell 执行整段命令的 MCP。
+1. 浏览器询问「是否打开 BetterCCS」，用户同意后 BetterCCS 被唤起（没开着的话会先启动）。
+2. BetterCCS 弹出导入确认框，展示链接里的全部内容：地址、打码后的 Key、模型、附带的配置原文、用量查询脚本全文。可疑的内容会标黄提示，例如指向本机或内网的地址、能改变进程加载行为的环境变量（`NODE_OPTIONS`、`LD_PRELOAD` 之类）、用 shell 执行整段命令的 MCP。
 3. 用户点「导入」后：
    - **供应商**：加进对应应用的供应商列表。确认框底部有一个开关，初始值取链接里的 `enabled`，用户可以改：
      - Claude Code、Codex、Gemini CLI、Grok Build：开关是「导入后立即切换到这个供应商」，默认关闭。打开时确认框会提示「客户端请求会改发到上面的地址」。
-     - OpenCode、OpenClaw、Hermes、Pi：这些应用可以同时放多个供应商，开关是「导入后立即添加到应用配置」（Pi 叫「启用」），默认打开；关掉则只保存在 CC Switch 的列表里。
+     - OpenCode、OpenClaw、Hermes、Pi：这些应用可以同时放多个供应商，开关是「导入后立即添加到应用配置」（Pi 叫「启用」），默认打开；关掉则只保存在 BetterCCS 的列表里。
    - **MCP**：立即写进 `apps` 里列出的每个应用的配置文件。
    - **提示词**：加进提示词列表。确认框里有「导入后立即启用」开关，初始值取链接里的 `enabled`；打开时会替换这个应用当前的提示词文件，原来启用的提示词被停用。
    - **Skill**：添加的是 Skill 仓库，用户还要到「Skills」页选择安装哪些。
@@ -70,9 +70,9 @@ ccswitch://v1/import?resource=<类型>&<参数>...
 几个站长容易踩到的细节：
 
 - 链接只能由用户点击触发。页面加载时自动跳转 `ccswitch://` 会被大多数浏览器拦下。
-- CC Switch 一次只处理一条链接；用户还没处理完上一条时又点了新的，只保留最新那条。不要设计成「一个按钮连续触发多条链接」，供应商、MCP、提示词各给一个按钮，让用户依次点。
+- BetterCCS 一次只处理一条链接；用户还没处理完上一条时又点了新的，只保留最新那条。不要设计成「一个按钮连续触发多条链接」，供应商、MCP、提示词各给一个按钮，让用户依次点。
 - 同一条供应商链接点两次会导入两份。供应商 ID 由名称加时间戳生成，不做去重。
-- 网页无法可靠地判断用户是否装了 CC Switch。按钮旁边写一句提示并附上下载地址，写法见「把链接放到按钮上」。
+- 网页无法可靠地判断用户是否装了 BetterCCS。按钮旁边写一句提示并附上下载地址，写法见「把链接放到按钮上」。
 
 ## 供应商链接
 
@@ -101,10 +101,10 @@ Claude Desktop、MiniMax Code 的供应商暂不支持深链接导入，链接�
 
 `apiFormat` 在不同应用里落到不同的地方：
 
-- **Claude Code、Codex、Grok Build**：这三个客户端只会说自己的原生格式（Claude Code 是 Anthropic，另两个是 Responses）。写了非原生格式，导入的卡片会带「需要路由」标记，用户切过去时要开启本地路由，由 CC Switch 转换请求格式。
-- **OpenCode、OpenClaw、Hermes、Pi**：这些客户端自己支持多种格式，CC Switch 把 `apiFormat` 换算成它们配置里的协议字段（OpenCode 的 `npm`、OpenClaw / Pi 的 `api`、Hermes 的 `api_mode`），客户端直接用这种格式请求你的接口，不经过本地路由。
+- **Claude Code、Codex、Grok Build**：这三个客户端只会说自己的原生格式（Claude Code 是 Anthropic，另两个是 Responses）。写了非原生格式，导入的卡片会带「需要路由」标记，用户切过去时要开启本地路由，由 BetterCCS 转换请求格式。
+- **OpenCode、OpenClaw、Hermes、Pi**：这些客户端自己支持多种格式，BetterCCS 把 `apiFormat` 换算成它们配置里的协议字段（OpenCode 的 `npm`、OpenClaw / Pi 的 `api`、Hermes 的 `api_mode`），客户端直接用这种格式请求你的接口，不经过本地路由。
 
-地址按所选格式的惯例写：Anthropic 格式在 Claude Code 里不带 `/v1`（如 `https://api.example.com`），OpenAI 两种格式一般带 `/v1`。OpenCode、OpenClaw、Hermes、Pi 的地址是各自 SDK 的 base URL，拼路径的方式不统一：同样是 Anthropic 格式，CC Switch 内置预设里 OpenCode 的地址带 `/v1`，Hermes 和 Pi 的不带。请为每个应用分别生成链接，地址以你在该应用里实测能通的写法为准。
+地址按所选格式的惯例写：Anthropic 格式在 Claude Code 里不带 `/v1`（如 `https://api.example.com`），OpenAI 两种格式一般带 `/v1`。OpenCode、OpenClaw、Hermes、Pi 的地址是各自 SDK 的 base URL，拼路径的方式不统一：同样是 Anthropic 格式，BetterCCS 内置预设里 OpenCode 的地址带 `/v1`，Hermes 和 Pi 的不带。请为每个应用分别生成链接，地址以你在该应用里实测能通的写法为准。
 
 ### 常用参数
 
@@ -117,7 +117,7 @@ Claude Desktop、MiniMax Code 的供应商暂不支持深链接导入，链接�
 | `model` | 默认模型。Claude Code 用原版 Claude 模型时留空；Codex 不写会用 `gpt-5-codex`，Grok Build 不写会用 `grok-4.5`；Pi 必填 |
 | `haikuModel` / `sonnetModel` / `opusModel` | 仅 Claude Code：三档模型别名对应的真实模型名，非原生模型才需要 |
 | `homepage` | 官网。不写时从地址推断（去掉 `api.` 前缀） |
-| `icon` | CC Switch 内置图标的名字，只能是小写字母、数字和 `. _ -`，其他写法会被丢掉；不认识的名字显示名称首字母。你的品牌没有内置图标时不用写 |
+| `icon` | BetterCCS 内置图标的名字，只能是小写字母、数字和 `. _ -`，其他写法会被丢掉；不认识的名字显示名称首字母。你的品牌没有内置图标时不用写 |
 | `iconUrl` | 你自己的图标图片地址，见下文「带上你的图标」。下载失败时退回 `icon` |
 | `notes` | 备注，显示在供应商卡片上 |
 | `enabled` | 确认框里「导入后立即切换 / 添加」开关的初始值，用户可以改。一般不用写 |
@@ -127,14 +127,14 @@ Claude Desktop、MiniMax Code 的供应商暂不支持深链接导入，链接�
 
 ### 带上你的图标：iconUrl
 
-CC Switch 内置图标里没有你的品牌时，用 `iconUrl` 给一个图片地址。确认框一打开，CC Switch 就下载这张图并显示在顶部，用户导入后它就是卡片图标，不需要用户再点什么。
+BetterCCS 内置图标里没有你的品牌时，用 `iconUrl` 给一个图片地址。确认框一打开，BetterCCS 就下载这张图并显示在顶部，用户导入后它就是卡片图标，不需要用户再点什么。
 
-图片会被重新画成 96×96 的 PNG 存进 CC Switch，之后不再访问这个地址。你以后换了图标，已经导入的用户不会跟着变。
+图片会被重新画成 96×96 的 PNG 存进 BetterCCS，之后不再访问这个地址。你以后换了图标，已经导入的用户不会跟着变。
 
 地址和图片要满足下面的条件，任何一条不满足，确认框不报错，图标退回 `icon` 指定的内置图标，没写 `icon` 就显示名称首字母：
 
 - `https://` 开头，主机是域名（不能是 IP），默认端口，不带账号密码。形状不对的地址在解析链接时就被丢掉，链接其余部分照常导入。
-- 公开可访问：CC Switch 下载时不带 Cookie 和 Referer，也不走用户的系统代理。需要登录、开了防盗链的地址都会失败。
+- 公开可访问：BetterCCS 下载时不带 Cookie 和 Referer，也不走用户的系统代理。需要登录、开了防盗链的地址都会失败。
 - 域名解析到的地址必须是公网地址，指向内网、本机的一律不下载。
 - 5 秒内下载完，最多跟 3 次重定向，每次重定向的目标也要满足上面这些条件。
 - 不超过 256 KB。
@@ -180,14 +180,14 @@ CC Switch 内置图标里没有你的品牌时，用 `iconUrl` 给一个图片�
 - `configFormat=json`，内容是 `{"auth": {"OPENAI_API_KEY": "sk-xxxx"}, "config": "<config.toml 原文>"}`；
 - `configFormat=toml`，内容直接是 `config.toml` 原文。
 
-CC Switch 不会把整份文件照搬进用户的 `~/.codex/config.toml`，只收属于这个供应商的部分：
+BetterCCS 不会把整份文件照搬进用户的 `~/.codex/config.toml`，只收属于这个供应商的部分：
 
 - **选中的那张 `[model_providers.<id>]` 表**：`model_provider` 指向的那张；没写 `model_provider` 时文件里只能有一张。表里收这些键：`name`、`base_url`、`wire_api`、`requires_openai_auth`、`experimental_bearer_token`、`model_catalog_url`、`capabilities`、`query_params`、`http_headers`、`request_max_retries`、`stream_max_retries`、`stream_idle_timeout_ms`、`websocket_connect_timeout_ms`、`supports_websockets`、`supports_standalone_web_search`。
 - **顶层的模型相关字段**：`model`、`review_model`、`model_reasoning_effort`、`plan_mode_reasoning_effort`、`disable_response_storage`、`web_search`、`model_context_window`、`model_auto_compact_token_limit`、`model_supports_reasoning_summaries`、`model_verbosity`，以及 `[agents]` 的子代理模型、`[memories]` 的记忆模型。
 
 其他的一律不收：`[features]`、`[tools]`、MCP、sandbox、`notify`、其他供应商表等，这些是用户自己的全局设置。
 
-导入后表名统一改成 `custom`（CC Switch 管理的 Codex 供应商都写在 `[model_providers.custom]`），`base_url` 和 `experimental_bearer_token` 用合并后的地址和 Key。`model_catalog_url` 必须与供应商地址同源，否则拒绝导入。
+导入后表名统一改成 `custom`（BetterCCS 管理的 Codex 供应商都写在 `[model_providers.custom]`），`base_url` 和 `experimental_bearer_token` 用合并后的地址和 Key。`model_catalog_url` 必须与供应商地址同源，否则拒绝导入。
 
 **会被拒绝的写法**：表里带 `auth`（让 Codex 执行命令取 Key）、`aws`、`gateway_oauth`（读本机云凭据）、`env_http_headers`（读环境变量）。`env_key` 会被丢掉，Key 一定要由链接自己给出；只写了 `env_key`、没给 Key 的链接会被拒绝。
 
@@ -215,7 +215,7 @@ stream_idle_timeout_ms = 300000
 
 写法同 Codex（`{"config": "<config.toml 原文>"}` 或 `configFormat=toml`）。
 
-只导入 `[models] default` 指向的那张 `[model."<名称>"]` 表；没写 `default` 时文件里只能有一张表，有多张又没写 `default` 会被拒绝。CC Switch 里一个 Grok Build 供应商只对应一张模型表，所以一条链接导入多个模型不支持。
+只导入 `[models] default` 指向的那张 `[model."<名称>"]` 表；没写 `default` 时文件里只能有一张表，有多张又没写 `default` 会被拒绝。BetterCCS 里一个 Grok Build 供应商只对应一张模型表，所以一条链接导入多个模型不支持。
 
 表里保留显示名、`description`、`api_backend`、`context_window`、`max_completion_tokens`、采样和重试参数、推理强度相关字段等；地址、Key、模型名用链接参数（URL 参数优先）。表里没写 `api_backend`、`context_window` 时补默认值。
 
@@ -251,7 +251,7 @@ OpenCode、OpenClaw、Hermes、Pi 读配置时会展开某些写法：Pi 的 Key
 
 ## 让用户导入后直接看到余额：用量查询脚本
 
-CC Switch 的供应商卡片可以显示余额或套餐用量，数据来自一段用量查询脚本。你把脚本放进链接，用户导入后就能直接看到。
+BetterCCS 的供应商卡片可以显示余额或套餐用量，数据来自一段用量查询脚本。你把脚本放进链接，用户导入后就能直接看到。
 
 ### 脚本长什么样
 
@@ -275,7 +275,7 @@ CC Switch 的供应商卡片可以显示余额或套餐用量，数据来自一�
 })
 ```
 
-运行前，CC Switch 会把脚本里的占位符替换成实际值：
+运行前，BetterCCS 会把脚本里的占位符替换成实际值：
 
 | 占位符 | 替换成 |
 |--------|--------|
@@ -301,13 +301,13 @@ CC Switch 的供应商卡片可以显示余额或套餐用量，数据来自一�
 
 ### 运行限制
 
-脚本是不可信输入，CC Switch 对它有硬限制：
+脚本是不可信输入，BetterCCS 对它有硬限制：
 
-- 跑在 QuickJS 沙箱里，没有 `fetch`、文件、网络等任何能力；脚本本身只负责「描述请求」和「解析响应」，请求由 CC Switch 代发。
+- 跑在 QuickJS 沙箱里，没有 `fetch`、文件、网络等任何能力；脚本本身只负责「描述请求」和「解析响应」，请求由 BetterCCS 代发。
 - **每次查询只发一个请求**，不能先登录再查询。
 - **请求必须是 HTTPS，且与 `{{baseUrl}}` 同源**（同域名、同端口）。不同源的请求会被拒绝。余额接口在另一个域名时（比如控制台在 `console.example.com`，API 在 `api.example.com`），用 `usageBaseUrl` 指向控制台域名。
 - 响应必须是 JSON。
-- 请求由 CC Switch 从用户电脑上直接发出，不经过浏览器，你的余额接口不需要配置 CORS。接口要能用 API Key 认证；只能用登录态或系统访问令牌查询时，用 `usageAccessToken` 把令牌带进链接（见下面 NewAPI 一节）。
+- 请求由 BetterCCS 从用户电脑上直接发出，不经过浏览器，你的余额接口不需要配置 CORS。接口要能用 API Key 认证；只能用登录态或系统访问令牌查询时，用 `usageAccessToken` 把令牌带进链接（见下面 NewAPI 一节）。
 - 脚本执行时间上限 5 秒，内存上限 16 MiB；HTTP 请求超时 10 秒。
 
 ### 启用与否
@@ -355,7 +355,7 @@ CC Switch 的供应商卡片可以显示余额或套餐用量，数据来自一�
 
 ### Sub2API 系的站
 
-Sub2API 自带给 CC Switch 用的 `GET /v1/usage` 接口，用 API Key 认证，不需要 `usageAccessToken`。返回的顶层字段就是 CC Switch 认的 `isValid`、`planName`、`remaining`、`unit`，脚本基本照搬：
+Sub2API 自带给 BetterCCS 用的 `GET /v1/usage` 接口，用 API Key 认证，不需要 `usageAccessToken`。返回的顶层字段就是 BetterCCS 认的 `isValid`、`planName`、`remaining`、`unit`，脚本基本照搬：
 
 ```javascript
 ({
@@ -394,8 +394,8 @@ Sub2API 自带给 CC Switch 用的 `GET /v1/usage` 接口，用 API Key 认证�
 - Codex、Grok Build 的供应商地址带 `/v1`，Claude Code 的不带。脚本先去掉末尾的 `/v1` 再拼接，所以各个应用通用，不用写 `usageBaseUrl`。
 - 三种情况都有 `remaining`：钱包余额（`planName` 是「钱包余额」）、订阅分组（`planName` 是分组名，取日 / 周 / 月限额里剩得最少的那个）、Key 单独设了总额度（另有 `quota.used` 和 `quota.limit`）。订阅分组没设任何限额时 `remaining` 是 `-1`，表示不限量，脚本不显示这个数。
 - 响应里还有 `rate_limits`（Key 的 5 小时 / 1 天 / 7 天窗口）和 `subscription`（分组的日 / 周 / 月用量和限额）。想在卡片上分行显示，可以让 `extractor` 返回数组，每个元素一行。
-- 这份脚本和 CC Switch 应用内「配置用量查询」的 Sub2API 模板（v4.0.10 起）完全一样，用户手动添加你的站时也能一键选用。
-- Sub2API 后台「导入到 CC Switch」按钮生成的链接自带一份查询脚本，用了 `?.` 和 `??` 写法，CC Switch 也能运行，但订阅分组不限量时会显示 `-1`。
+- 这份脚本和 BetterCCS 应用内「配置用量查询」的 Sub2API 模板（v4.0.10 起）完全一样，用户手动添加你的站时也能一键选用。
+- Sub2API 后台「导入到 BetterCCS」按钮生成的链接自带一份查询脚本，用了 `?.` 和 `??` 写法，BetterCCS 也能运行，但订阅分组不限量时会显示 `-1`。
 
 ## MCP、提示词、Skill 链接
 
@@ -413,7 +413,7 @@ Sub2API 自带给 CC Switch 用的 `GET /v1/usage` 接口，用 API Key 认证�
 
 **提示词**（`resource=prompt`）
 
-- `app` 取 `claude`、`codex`、`gemini`、`grokbuild`、`opencode`、`pi`、`mcode`。`openclaw`、`hermes` 在 CC Switch 里由工作区编辑器和记忆管理负责，不建议用深链接分发提示词。
+- `app` 取 `claude`、`codex`、`gemini`、`grokbuild`、`opencode`、`pi`、`mcode`。`openclaw`、`hermes` 在 BetterCCS 里由工作区编辑器和记忆管理负责，不建议用深链接分发提示词。
 - `name`、`content`（Base64 的 Markdown）必填，`description` 可选。
 - `enabled` 是确认框里「导入后立即启用」开关的初始值。启用会用这段内容替换用户当前的提示词文件（如 `CLAUDE.md`），一般不要写。
 
@@ -508,7 +508,7 @@ def codex_import_link(api_key: str) -> str:
     return "ccswitch://v1/import?" + urlencode(params)
 ```
 
-`urlencode` 默认把空格转成 `+`、把 `+` 转成 `%2B`，和 CC Switch 的解析规则一致。
+`urlencode` 默认把空格转成 `+`、把 `+` 转成 `%2B`，和 BetterCCS 的解析规则一致。
 
 ### 浏览器里生成
 
@@ -531,7 +531,7 @@ function b64(text) {
 
 1. 按钮本身不带链接。用户点击时，前端向你的后端请求这个用户的链接。
 2. 后端确认用户已登录，用这个用户自己的 Key 生成链接返回（用上一节的生成函数）。
-3. 前端拿到链接后执行 `window.location.href = link`。浏览器询问是否打开 CC Switch，用户同意后弹出导入确认框。
+3. 前端拿到链接后执行 `window.location.href = link`。浏览器询问是否打开 BetterCCS，用户同意后弹出导入确认框。
 
 这样链接不会写进页面源码，只在用户真的点了按钮时生成一次。
 
@@ -562,8 +562,8 @@ app.post("/api/ccswitch-link", requireLogin, (req, res) => {
 <button type="button" onclick="importToCcSwitch('claude')">导入到 Claude Code</button>
 <button type="button" onclick="importToCcSwitch('codex')">导入到 Codex</button>
 <p class="hint">
-  浏览器会先询问是否打开 CC Switch，请选「打开」。点了没有任何反应？可能还没安装，
-  先<a href="https://ccswitch.io" target="_blank" rel="noopener">下载 CC Switch</a>，装好后再点一次。
+  浏览器会先询问是否打开 BetterCCS，请选「打开」。点了没有任何反应？可能还没安装，
+  先<a href="https://github.com/WEP-56/BetterCCS/releases" target="_blank" rel="noopener">下载 BetterCCS</a>，装好后再点一次。
 </p>
 
 <script>
@@ -587,14 +587,14 @@ app.post("/api/ccswitch-link", requireLogin, (req, res) => {
 
 - **跳转要紧跟着点击**。浏览器只放行用户点击触发的外部应用唤起，有的浏览器在点击后隔得太久就不再算作点击触发。接口应在一两秒内返回；不要在拿到链接后再弹一个确认框，让用户再点一次。
 - **一条链接只导入到一个应用**。同时支持几个应用时，每个应用放一个按钮，或者先让用户选择客户端，再点同一个「导入」按钮。每个应用的地址和格式可能不同，见「支持哪些应用」。
-- **没装 CC Switch 时浏览器通常什么都不提示**，网页也无法可靠地判断。所以按钮旁边的那句提示要一直显示，不要等检测结果。
-- 同一个按钮被点两次会导入两份。用户点完一次后，可以把按钮改成「已发送到 CC Switch」，或者暂时禁用几秒。
+- **没装 BetterCCS 时浏览器通常什么都不提示**，网页也无法可靠地判断。所以按钮旁边的那句提示要一直显示，不要等检测结果。
+- 同一个按钮被点两次会导入两份。用户点完一次后，可以把按钮改成「已发送到 BetterCCS」，或者暂时禁用几秒。
 
 ## 安全与隐私
 
 - **带 Key 的链接等同于 Key 本身**。直接写进按钮 `href` 的链接会出现在页面源码里，可能被浏览器插件读到；按「把链接放到按钮上」的做法，在用户点击时才向后端要链接，可以避免这一点。只在用户登录后的页面生成，不要写进公开页面、邮件群发或社群公告；不要让它进入你的访问日志和第三方统计。
-- 链接越短越好。整份 `config` 很长时，Windows 下传给 CC Switch 的命令行有约 3.2 万字符的上限，超长的链接打不开。
-- CC Switch 对链接内容做的是白名单过滤和醒目提示，不是替用户背书。确认框显示的每一项用户都能看到，别在里面放和你的服务无关的东西，用户会因此不信任这个按钮。
+- 链接越短越好。整份 `config` 很长时，Windows 下传给 BetterCCS 的命令行有约 3.2 万字符的上限，超长的链接打不开。
+- BetterCCS 对链接内容做的是白名单过滤和醒目提示，不是替用户背书。确认框显示的每一项用户都能看到，别在里面放和你的服务无关的东西，用户会因此不信任这个按钮。
 
 ## 调试
 
@@ -602,7 +602,7 @@ app.post("/api/ccswitch-link", requireLogin, (req, res) => {
 2. 确认框直接报错时，错误信息就是原因，对照上面「会被拒绝的链接」排查。
 3. 导入成功但余额不显示：在供应商卡片上打开「配置用量查询」，点「测试脚本」看报什么错。最常见的是请求地址不同源、余额接口返回的不是 JSON、`extractor` 里取错了字段。
 4. 导入成功但切过去后请求失败：多半是接口格式不对（见「支持哪些应用」），或模型名不对。
-5. `iconUrl` 的图标没显示：下载失败不会报错，原因写在 CC Switch 的日志里（`~/.cc-switch/logs/cc-switch.log`，搜 `Skipped deep link icon`）。最常见的是 `Content-Type` 不对、图片超过 256 KB、地址要登录或开了防盗链，用 `curl -I` 看一下响应头。
+5. `iconUrl` 的图标没显示：下载失败不会报错，原因写在 BetterCCS 的日志里（`~/.cc-switch/logs/cc-switch.log`，搜 `Skipped deep link icon`）。最常见的是 `Content-Type` 不对、图片超过 256 KB、地址要登录或开了防盗链，用 `curl -I` 看一下响应头。
 
 ## 兼容旧版本
 
@@ -613,10 +613,10 @@ app.post("/api/ccswitch-link", requireLogin, (req, res) => {
 | 带脚本、不写 `usageEnabled` | 启用 | 不启用 |
 | Codex 附带的 `config.toml` | 按白名单收下供应商表和模型字段 | 只取地址、Key 和模型名，其余丢弃，按固定模板重建 |
 | Grok Build 附带的模型表 | 收下选中表的字段 | 只取地址、Key 和模型名 |
-| CC Switch 没开着时点链接 | 启动后弹出确认框 | 偶尔丢失，要再点一次 |
+| BetterCCS 没开着时点链接 | 启动后弹出确认框 | 偶尔丢失，要再点一次 |
 | `apiFormat` | 按应用换算 | 忽略，一律用默认格式 |
 | `app=pi` | 支持 | 拒绝导入 |
 | `iconUrl` | 下载并作为卡片图标 | 忽略，显示 `icon` 或名称首字母 |
 | 「导入后立即切换 / 启用」 | 确认框里的开关，`enabled` 是初始值 | 直接按链接的 `enabled` 执行；OpenCode / OpenClaw / Hermes 总是写进应用配置 |
 
-想让各个版本表现一致：用量查询显式写 `usageEnabled=true`；Codex / Grok Build 的关键信息（地址、Key、模型）同时写进 URL 参数，不要只放在 `config` 里。你的接口不是应用的默认格式时，旧版本导入的卡片格式会不对，可以在按钮旁提示用户升级 CC Switch。
+想让各个版本表现一致：用量查询显式写 `usageEnabled=true`；Codex / Grok Build 的关键信息（地址、Key、模型）同时写进 URL 参数，不要只放在 `config` 里。你的接口不是应用的默认格式时，旧版本导入的卡片格式会不对，可以在按钮旁提示用户升级 BetterCCS。

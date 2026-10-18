@@ -94,7 +94,6 @@ export function ProviderCardActions({
         ))}
       </div>
 
-
       <IconAction
         tip={t("common.edit")}
         disabledReason={presentation.editDisabledReason}

@@ -719,11 +719,17 @@ impl AppSettings {
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string());
 
+        // 界面只剩简中与英文：旧设置里存过的 zh-TW / ja / tr 归到最接近的一档，
+        // 认不出来的值仍然丢掉（和以前一样），由界面回退到系统语言。
         self.language = self
             .language
             .as_ref()
             .map(|s| s.trim())
-            .filter(|s| matches!(*s, "en" | "zh" | "zh-TW" | "ja" | "tr"))
+            .and_then(|s| match s {
+                "en" | "ja" | "tr" => Some("en"),
+                _ if s.to_lowercase().starts_with("zh") => Some("zh"),
+                _ => None,
+            })
             .map(|s| s.to_string());
 
         self.quota_display = self

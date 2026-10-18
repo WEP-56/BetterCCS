@@ -187,7 +187,7 @@ fn pi_toggle_writes_its_mcp_json_and_keeps_pi_fields() {
     assert_eq!(disabled["exposure"], "direct");
     assert!(!state.db.get_all_mcp_servers().unwrap()["docs"].apps.pi);
 
-    // 在 CC Switch 里删除服务器才删掉条目
+    // 在 BetterCCS 里删除服务器才删掉条目
     McpService::delete_server(&state, "docs").unwrap();
     assert!(read()["mcpServers"].get("docs").is_none());
 

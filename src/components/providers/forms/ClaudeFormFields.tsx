@@ -161,7 +161,6 @@ interface ClaudeFormFieldsProps {
   onLocalProxyHeadersOverrideChange: (value: string) => void;
   localProxyBodyOverride: string;
   onLocalProxyBodyOverrideChange: (value: string) => void;
-
 }
 
 export function ClaudeFormFields({
@@ -893,9 +892,7 @@ export function ClaudeFormFields({
   // 只有第三方端点才认不出原始 Claude 模型名：直连看后台任务用的 Haiku 档，路由看兜底模型本身。
   const usesThirdPartyEndpoint =
     category !== "official" && category !== "cloud_provider";
-  const fallbackModelMissing =
-    usesThirdPartyEndpoint &&
-    !claudeModel.trim();
+  const fallbackModelMissing = usesThirdPartyEndpoint && !claudeModel.trim();
 
   // 完整 URL 跟着地址框：托管账号卡的地址由后端固定，没有这个开关。
   const fullUrlToggle = shouldShowSpeedTest &&

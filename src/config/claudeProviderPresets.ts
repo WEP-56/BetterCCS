@@ -2553,7 +2553,7 @@ export const providerPresets: ProviderPreset[] = [
         // non-Claude model ids. The ChatGPT Codex backend catalogs gpt-5.6-sol
         // at a 272K window (Codex budgets 95% of it), not the 1.05M API window;
         // it was 372K until mid-2026 (openai/codex#31860). Same cap as every
-        // GPT window CC Switch fills (GPT_CONTEXT_WINDOW_CAP). Pin both knobs:
+        // GPT window BetterCCS fills (GPT_CONTEXT_WINDOW_CAP). Pin both knobs:
         // the compact window equals min(model window, value), and the routing
         // alias gets a 1M model window, so the compact window is what keeps the
         // trigger under the backend's limit.
@@ -2803,7 +2803,7 @@ export const providerPresets: ProviderPreset[] = [
     apiKeyUrl: "https://moark.com/dashboard/tokens",
     settingsConfig: {
       env: {
-        // 官方文档（CC Switch 快速配置）指定 Claude Code 走 Anthropic 原生入口
+        // 官方文档（BetterCCS 快速配置）指定 Claude Code 走 Anthropic 原生入口
         ANTHROPIC_BASE_URL: "https://moark.com/anthropic",
         ANTHROPIC_AUTH_TOKEN: "",
         ANTHROPIC_MODEL: "deepseek-v4-flash-0731[1M]",

@@ -11,7 +11,6 @@ interface CodexConfigEditorProps {
 
   showRemoteCompaction?: boolean;
 
-
   onAuthChange: (value: string) => void;
 
   onConfigChange: (value: string) => void;

@@ -561,7 +561,7 @@ mod tests {
             json!({ "env": {} })
         );
 
-        // 用户在 live 里把它改成了 0：不是 CC Switch 写的，保留。
+        // 用户在 live 里把它改成了 0：不是 BetterCCS 写的，保留。
         let edited = json!({ "env": { "CLAUDE_CODE_DISABLE_ARTIFACT": "0" } });
         assert_eq!(
             project(&edited, Some(&kimi()), &official),

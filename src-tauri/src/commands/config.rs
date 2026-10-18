@@ -18,14 +18,13 @@ pub async fn get_claude_config_status() -> Result<ConfigStatus, String> {
 use std::str::FromStr;
 
 fn invalid_json_format_error(error: serde_json::Error) -> String {
+    // 界面只有简中与英文：旧设置里存过的其它语言（zh-TW / ja / tr）读作简中
     let lang = settings::get_settings()
         .language
         .unwrap_or_else(|| "zh".to_string());
 
     match lang.as_str() {
         "en" => format!("Invalid JSON format: {error}"),
-        "tr" => format!("Geçersiz JSON biçimi: {error}"),
-        "ja" => format!("JSON形式が無効です: {error}"),
         _ => format!("无效的 JSON 格式: {error}"),
     }
 }
@@ -37,8 +36,6 @@ fn invalid_toml_format_error(error: toml_edit::TomlError) -> String {
 
     match lang.as_str() {
         "en" => format!("Invalid TOML format: {error}"),
-        "tr" => format!("Geçersiz TOML biçimi: {error}"),
-        "ja" => format!("TOML形式が無効です: {error}"),
         _ => format!("无效的 TOML 格式: {error}"),
     }
 }

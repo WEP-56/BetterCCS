@@ -437,8 +437,8 @@ export interface Settings {
   autoSyncConfirmed?: boolean;
   // User has confirmed the common config first-run notice
   commonConfigConfirmed?: boolean;
-  // 首选语言（可选，默认中文）
-  language?: "en" | "zh" | "zh-TW" | "ja" | "tr";
+  // 首选语言（可选，默认中文）；旧版本的 zh-TW / ja / tr 读入时归到 zh / en
+  language?: "en" | "zh";
   // 按档的额度百分比写剩余还是已用（默认剩余；余额、Credits 不受影响）
   quotaDisplay?: "left" | "used";
 

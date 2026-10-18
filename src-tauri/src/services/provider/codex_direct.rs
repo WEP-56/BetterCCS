@@ -315,7 +315,7 @@ fn row_facts(db: &Database) -> Result<RowFacts, AppError> {
                 .and_then(Item::as_str)
                 .map(|url| url.trim().to_string())
         };
-        // 旧版整份写入时，路由表用的是行自己的 id（custom 是 CC Switch 现在写的，不算）。
+        // 旧版整份写入时，路由表用的是行自己的 id（custom 是 BetterCCS 现在写的，不算）。
         let selector = doc
             .get("model_provider")
             .and_then(Item::as_str)

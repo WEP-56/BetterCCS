@@ -386,7 +386,7 @@ export function UsageDisplaySection({
                 [
                   t("usage.display.rateHint"),
                   t("usage.display.approxNote"),
-                ].join(/^(zh|ja)/i.test(lang) ? "" : " ")}
+                ].join(/^zh/i.test(lang) ? "" : " ")}
           </p>
         )}
       </div>

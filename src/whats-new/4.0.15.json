@@ -1,0 +1,15 @@
+{
+  "version": "4.0.15",
+  "items": [
+    {
+      "type": "new",
+      "zh": "改名为 BetterCCS，界面语言只保留简体中文与英文",
+      "en": "Renamed to BetterCCS, with Simplified Chinese and English interfaces"
+    },
+    {
+      "type": "improve",
+      "zh": "更新检查与发行说明都指向本仓库，升级改为从 Releases 下载安装包",
+      "en": "Update checks and release notes now use this repo; download upgrades from Releases"
+    }
+  ]
+}

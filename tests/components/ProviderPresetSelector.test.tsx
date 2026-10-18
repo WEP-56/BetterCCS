@@ -32,9 +32,7 @@ import {
   PRESET_REGION_KEYS,
 } from "@/config/presetFamilies";
 import zh from "@/i18n/locales/zh.json";
-import zhTW from "@/i18n/locales/zh-TW.json";
 import en from "@/i18n/locales/en.json";
-import ja from "@/i18n/locales/ja.json";
 
 vi.mock("@/components/ProviderIcon", () => ({
   ProviderIcon: ({ name }: { name: string }) => (
@@ -338,7 +336,7 @@ describe("preset families", () => {
     expect(sections("gamma")).toEqual([["thirdparty", ["gamma"]]]);
   });
 
-  it("has every family name and version label in all four locales", () => {
+  it("has every family name and version label in both locales", () => {
     const lookup = (data: unknown, key: string) =>
       key
         .split(".")
@@ -359,15 +357,15 @@ describe("preset families", () => {
         "nameKey" in info ? [info.nameKey] : [],
       ),
     ];
-    for (const locale of [zh, zhTW, en, ja]) {
+    for (const locale of [zh, en]) {
       for (const key of keys) {
         expect(typeof lookup(locale, key), key).toBe("string");
       }
     }
   });
 
-  it("has a label and a hint for every category in all four locales", () => {
-    for (const [name, locale] of Object.entries({ zh, zhTW, en, ja })) {
+  it("has a label and a hint for every category in both locales", () => {
+    for (const [name, locale] of Object.entries({ zh, en })) {
       const { group, groupHint } = locale.providerPreset as unknown as Record<
         "group" | "groupHint",
         Record<string, unknown>

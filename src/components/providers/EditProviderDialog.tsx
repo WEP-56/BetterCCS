@@ -10,12 +10,7 @@ import {
   ProviderForm,
   type ProviderFormValues,
 } from "@/components/providers/forms/ProviderForm";
-import {
-  openclawApi,
-  providersApi,
-  vscodeApi,
-  type AppId,
-} from "@/lib/api";
+import { openclawApi, providersApi, vscodeApi, type AppId } from "@/lib/api";
 import type {
   EditorConflictPolicy,
   ProviderEditorSave,
@@ -377,7 +372,7 @@ export function EditProviderDialog({
           initialData={initialData}
           showButtons={false}
           inactiveFields={editorView?.inactive}
-                    />
+        />
       )}
       {conflictDialog}
     </FullScreenPanel>

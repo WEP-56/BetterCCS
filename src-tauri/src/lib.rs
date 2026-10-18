@@ -483,7 +483,7 @@ pub fn run() {
 
                 // 用户配置存在数据库中，数据库尚未打开时使用保守的 Info 级别。
                 log::set_max_level(log::LevelFilter::Info);
-                log::info!("=== CC Switch v{} started ===", env!("CARGO_PKG_VERSION"));
+                log::info!("=== BetterCCS v{} started ===", env!("CARGO_PKG_VERSION"));
             }
 
             // 首次读取覆盖路径时 logger 尚未可用；此处重放一次，
@@ -492,18 +492,6 @@ pub fn run() {
 
             #[cfg(target_os = "windows")]
             set_windows_app_user_model_id(app.handle());
-
-            // 注册 Updater 插件（桌面端）；放在 logger 之后，确保失败可诊断。
-            #[cfg(desktop)]
-            {
-                if let Err(e) = app
-                    .handle()
-                    .plugin(tauri_plugin_updater::Builder::new().build())
-                {
-                    // 若配置不完整（如缺少 pubkey），跳过 Updater 而不中断应用
-                    log::warn!("初始化 Updater 插件失败，已跳过：{e}");
-                }
-            }
 
             // 注入 AppHandle 给 usage_events，让无 AppHandle 持有的写日志路径
             // 也能向前端推送 `usage-log-recorded`。
@@ -710,7 +698,7 @@ pub fn run() {
             // 落成 "default" provider 设为 current，再追加官方预设（is_current=false）。
             // 降级回旧版时，旧版的回填和整份写入仍靠这一行保住用户原来的 live 配置。
             //
-            // 捕获首次运行快照：所有全新装用户都会看到欢迎弹窗介绍 CC Switch 的工作方式。
+            // 捕获首次运行快照：所有全新装用户都会看到欢迎弹窗介绍 BetterCCS 的工作方式。
             // 读失败时默认不弹，宁可漏弹也不要因为故障打扰用户。
             let first_run_already_confirmed = crate::settings::get_settings()
                 .first_run_notice_confirmed
@@ -1110,7 +1098,7 @@ pub fn run() {
 
             // 构建托盘
             let mut tray_builder = TrayIconBuilder::with_id(tray::TRAY_ID)
-                .tooltip("CC Switch") // 鼠标悬停提示
+                .tooltip("BetterCCS") // 鼠标悬停提示
                 .on_tray_icon_event(|tray, event| {
                     // Windows 的习惯是左键打开应用、右键出菜单（按平台给默认值，不加开关）；
                     // macOS 左键仍出菜单；Linux（AppIndicator）不派发点击事件，只能出菜单。
@@ -1437,9 +1425,8 @@ pub fn run() {
             commands::get_codex_sessions_disk_usage,
             commands::restore_codex_unified_history,
             commands::restart_app,
-            commands::install_update_and_restart,
             commands::check_app_update_available,
-            commands::check_for_updates,
+            commands::open_app_update_download,
             commands::open_portable_update_download,
             commands::is_portable_mode,
             commands::copy_text_to_clipboard,
@@ -2006,7 +1993,7 @@ fn show_migration_error_dialog(app: &tauri::AppHandle, error: &str) -> bool {
         format!(
             "从旧版本迁移配置时发生错误：\n\n{error}\n\n\
             您的数据尚未丢失，旧配置文件仍然保留。\n\
-            建议回退到旧版本 CC Switch 以保护数据。\n\n\
+            建议回退到旧版本 BetterCCS 以保护数据。\n\n\
             点击「重试」重新尝试迁移\n\
             点击「退出」关闭程序（可回退版本后重新打开）"
         )
@@ -2014,7 +2001,7 @@ fn show_migration_error_dialog(app: &tauri::AppHandle, error: &str) -> bool {
         format!(
             "An error occurred while migrating configuration:\n\n{error}\n\n\
             Your data is NOT lost - the old config file is still preserved.\n\
-            Consider rolling back to an older CC Switch version.\n\n\
+            Consider rolling back to an older BetterCCS version.\n\n\
             Click 'Retry' to attempt migration again\n\
             Click 'Exit' to close the program"
         )
@@ -2079,7 +2066,7 @@ fn show_database_init_error_dialog(
             Common causes include: newer database version, corrupted file, permission issues, or low disk space.\n\n\
             Suggestions:\n\
             1) Back up the entire config directory (including cc-switch.db)\n\
-            2) If you see “database version is newer”, please upgrade CC Switch\n\
+            2) If you see “database version is newer”, please upgrade BetterCCS\n\
             3) If this happened right after upgrading, consider rolling back to export/backup then upgrade again\n\n\
             Click 'Retry' to attempt initialization again\n\
             Click 'Exit' to close the program",

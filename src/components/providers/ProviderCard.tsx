@@ -181,7 +181,6 @@ export function ProviderCard({
           `OpenAI Official (${managedCodexAccount.login})`),
   );
 
-
   const fallbackUrlText = t("provider.notConfigured", {
     defaultValue: "未配置接口地址",
   });

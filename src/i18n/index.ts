@@ -2,28 +2,36 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import en from "./locales/en.json";
-import ja from "./locales/ja.json";
-import tr from "./locales/tr.json";
 import zh from "./locales/zh.json";
-import zhTW from "./locales/zh-TW.json";
 
-type Language = "zh" | "zh-TW" | "en" | "ja" | "tr";
+type Language = "zh" | "en";
 
 const DEFAULT_LANGUAGE: Language = "zh";
 
 const isLanguage = (value: unknown): value is Language =>
-  value === "zh" ||
-  value === "zh-TW" ||
-  value === "en" ||
-  value === "ja" ||
-  value === "tr";
+  value === "zh" || value === "en";
+
+/**
+ * 旧版本（上游 cc-switch）可能把语言存成 `zh-TW` / `ja` / `tr`：这些语言本分支
+ * 已经不提供，落到能读的那一档上，别让界面掉回系统语言。繁中读简中、日文与
+ * 土耳其文读英文，都是各自最接近的选择。
+ */
+const normalizeLegacyLanguage = (value: unknown): Language | undefined => {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.toLowerCase().replace(/_/g, "-");
+  if (isLanguage(normalized)) return normalized;
+  if (normalized.startsWith("zh")) return "zh";
+  if (normalized === "ja" || normalized === "tr") return "en";
+  return undefined;
+};
 
 const getInitialLanguage = (): Language => {
   if (typeof window !== "undefined") {
     try {
       const stored = window.localStorage.getItem("language");
-      if (isLanguage(stored)) {
-        return stored;
+      const legacy = normalizeLegacyLanguage(stored);
+      if (legacy) {
+        return legacy;
       }
     } catch (error) {
       console.warn("[i18n] Failed to read stored language preference", error);
@@ -36,29 +44,8 @@ const getInitialLanguage = (): Language => {
         navigator.languages?.[0]?.toLowerCase())
       : undefined;
 
-  if (navigatorLang === "zh") {
-    return "zh";
-  }
-
-  if (
-    navigatorLang?.startsWith("zh-tw") ||
-    navigatorLang?.startsWith("zh-hk") ||
-    navigatorLang?.startsWith("zh-mo") ||
-    navigatorLang?.startsWith("zh-hant")
-  ) {
-    return "zh-TW";
-  }
-
   if (navigatorLang?.startsWith("zh")) {
     return "zh";
-  }
-
-  if (navigatorLang?.startsWith("ja")) {
-    return "ja";
-  }
-
-  if (navigatorLang?.startsWith("tr")) {
-    return "tr";
   }
 
   if (navigatorLang?.startsWith("en")) {
@@ -70,18 +57,11 @@ const getInitialLanguage = (): Language => {
 };
 
 const resources = {
-  tr: { translation: tr },
   en: {
     translation: en,
   },
-  ja: {
-    translation: ja,
-  },
   zh: {
     translation: zh,
-  },
-  "zh-TW": {
-    translation: zhTW,
   },
 };
 
@@ -106,15 +86,16 @@ i18n.use(initReactI18next).init({
  * 系统语言。启动后拿到后端设置再对一次，不一致时切换并回写缓存。
  */
 export const syncLanguageFromSettings = (language?: string | null): void => {
-  if (!isLanguage(language)) return;
+  const normalized = normalizeLegacyLanguage(language);
+  if (!normalized) return;
 
-  if (i18n.language !== language) {
-    void i18n.changeLanguage(language);
+  if (i18n.language !== normalized) {
+    void i18n.changeLanguage(normalized);
   }
 
   try {
-    if (window.localStorage.getItem("language") !== language) {
-      window.localStorage.setItem("language", language);
+    if (window.localStorage.getItem("language") !== normalized) {
+      window.localStorage.setItem("language", normalized);
     }
   } catch (error) {
     console.warn("[i18n] Failed to persist language preference", error);

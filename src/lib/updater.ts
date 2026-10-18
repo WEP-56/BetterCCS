@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 
 export type UpdateChannel = "stable" | "beta";
@@ -22,27 +23,27 @@ export async function getCurrentVersion(): Promise<string> {
   }
 }
 
-export async function checkForUpdate(
-  opts: CheckOptions = {},
-): Promise<
+/**
+ * 检查应用自身有没有新版本。
+ *
+ * 走后端命令查本仓库的 GitHub Releases，不用 Tauri 的更新插件：本仓库的产物不做
+ * 代码签名（见 .github/workflows/release.yml），插件要求的 minisign 签名和
+ * latest.json 都不存在；装新版本的方式是去 Releases 页下载覆盖安装。
+ */
+export async function checkForUpdate(): Promise<
   { status: "up-to-date" } | { status: "available"; info: UpdateInfo }
 > {
-  // 动态引入，避免在未安装插件时导致打包期问题
-  const { check } = await import("@tauri-apps/plugin-updater");
-
   const currentVersion = await getCurrentVersion();
-  const update = await check({ timeout: opts.timeout ?? 30000 } as any);
+  const availableVersion = await invoke<string | null>(
+    "check_app_update_available",
+  );
 
-  if (!update) {
+  if (!availableVersion) {
     return { status: "up-to-date" };
   }
 
-  const info: UpdateInfo = {
-    currentVersion,
-    availableVersion: (update as any).version ?? "",
-    notes: (update as any).notes,
-    pubDate: (update as any).date,
+  return {
+    status: "available",
+    info: { currentVersion, availableVersion },
   };
-
-  return { status: "available", info };
 }

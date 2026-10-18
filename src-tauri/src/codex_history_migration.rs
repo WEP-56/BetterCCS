@@ -1543,7 +1543,7 @@ base_url = "https://aihubmix.example/v1"
             ),
             Provider::with_id(
                 "legacy-ccswitch".to_string(),
-                "Legacy CC Switch".to_string(),
+                "Legacy BetterCCS".to_string(),
                 serde_json::json!({
                     "auth": {},
                     "config": r#"model_provider = "ccswitch"
@@ -2610,7 +2610,7 @@ model = "gpt-5.4"
         let db = Database::memory().expect("memory db");
         let provider = Provider::with_id(
             "legacy-ccswitch".to_string(),
-            "Legacy CC Switch".to_string(),
+            "Legacy BetterCCS".to_string(),
             serde_json::json!({
                 "auth": {},
                 "config": r#"model_provider = "ccswitch"
@@ -2860,7 +2860,7 @@ model_provider = "aihubmix"
         assert!(!ids.contains("my-local-relay"));
     }
 
-    /// 端到端测试用的隔离 HOME：CC Switch 设置与 `~/.codex` 都落在临时目录。
+    /// 端到端测试用的隔离 HOME：BetterCCS 设置与 `~/.codex` 都落在临时目录。
     struct IsolatedHome {
         dir: tempfile::TempDir,
         original_test_home: Option<OsString>,

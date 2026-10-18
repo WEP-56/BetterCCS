@@ -73,22 +73,8 @@ pub async fn copy_text_to_clipboard(text: String) -> Result<bool, String> {
     .map_err(|e| format!("剪贴板任务执行失败: {e}"))?
 }
 
-/// 检查更新
-#[tauri::command]
-pub async fn check_for_updates(handle: AppHandle) -> Result<bool, String> {
-    handle
-        .opener()
-        .open_url(
-            "https://github.com/farion1231/cc-switch/releases/latest",
-            None::<String>,
-        )
-        .map_err(|e| format!("打开更新页面失败: {e}"))?;
-
-    Ok(true)
-}
-
 /// 便携版新版本压缩包的下载地址，命名与 release.yml 的「Prepare Windows Assets」一致：
-/// `CC-Switch-v<版本>-Windows[-arm64]-Portable.zip`。版本号不像版本号时返回 None。
+/// `BetterCCS-v<版本>-Windows[-arm64]-Portable.zip`。版本号不像版本号时返回 None。
 fn portable_zip_url(version: &str, arm64: bool) -> Option<String> {
     let version = version.trim().trim_start_matches('v');
     let looks_like_version = version.starts_with(|c: char| c.is_ascii_digit())
@@ -100,7 +86,7 @@ fn portable_zip_url(version: &str, arm64: bool) -> Option<String> {
     }
     let suffix = if arm64 { "-arm64" } else { "" };
     Some(format!(
-        "https://github.com/farion1231/cc-switch/releases/download/v{version}/CC-Switch-v{version}-Windows{suffix}-Portable.zip"
+        "https://github.com/WEP-56/BetterCCS/releases/download/v{version}/BetterCCS-v{version}-Windows{suffix}-Portable.zip"
     ))
 }
 
@@ -112,7 +98,7 @@ pub async fn open_portable_update_download(
     version: String,
 ) -> Result<bool, String> {
     let url = portable_zip_url(&version, cfg!(target_arch = "aarch64"))
-        .unwrap_or_else(|| "https://github.com/farion1231/cc-switch/releases/latest".to_string());
+        .unwrap_or_else(|| "https://github.com/WEP-56/BetterCCS/releases/latest".to_string());
     handle
         .opener()
         .open_url(url, None::<String>)
@@ -5380,10 +5366,65 @@ fn run_windows_start_command(args: &[&str], terminal_name: &str) -> Result<(), S
     run_windows_start_command_with_env(args, terminal_name, &[])
 }
 
-/// 组装 `cmd /C start ...`。终端里跑的 `claude` 等命令按这里的 PATH 查找：CC Switch
+/// 应用自身的发布仓库。应用内更新检查与「去下载」都指向它，不再经过上游站点，
+/// 也不需要任何签名密钥。
+pub(crate) const APP_RELEASES_REPO: &str = "WEP-56/BetterCCS";
+
+/// 本仓库 Releases 的某个版本页；版本号不像版本号时退到 latest 页。
+pub(crate) fn app_release_page_url(version: &str) -> String {
+    let version = version.trim().trim_start_matches('v');
+    let looks_like_version = version.starts_with(|c: char| c.is_ascii_digit())
+        && version
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '+'));
+    if looks_like_version {
+        format!("https://github.com/{APP_RELEASES_REPO}/releases/tag/v{version}")
+    } else {
+        format!("https://github.com/{APP_RELEASES_REPO}/releases/latest")
+    }
+}
+
+/// 检查应用自身是否有新版本，返回可用的新版本号（无更新时返回 None）。
+///
+/// 走 GitHub Releases API 而不是 Tauri 的更新插件：本仓库的产物不做代码签名，
+/// 插件要求的 minisign 签名与 latest.json 都不存在（见 .github/workflows/release.yml）。
+pub(crate) async fn check_app_update_available_impl(current: &str) -> Option<String> {
+    let client = crate::upstream::http_client::get();
+    let latest = fetch_github_latest_version(&client, APP_RELEASES_REPO).await?;
+    match compare_semver(&latest, current) {
+        Some(std::cmp::Ordering::Greater) => Some(latest),
+        _ => None,
+    }
+}
+
+/// 应用自身的更新检查；数据库版本过新的恢复界面也用它。
+#[tauri::command]
+pub async fn check_app_update_available(app: AppHandle) -> Result<Option<String>, String> {
+    let current = app.package_info().version.to_string();
+    Ok(check_app_update_available_impl(&current).await)
+}
+
+/// 应用自身的「去下载新版本」：打开本仓库该版本的 Releases 页。
+///
+/// 打包不做签名，Tauri 的原地自动更新用不了，「升级」就是把用户送到发布页自己取
+/// 安装包覆盖面装（便携版另有 open_portable_update_download 直接给 zip 地址）。
+#[tauri::command]
+pub async fn open_app_update_download(
+    handle: AppHandle,
+    version: String,
+) -> Result<bool, String> {
+    handle
+        .opener()
+        .open_url(app_release_page_url(&version), None::<String>)
+        .map_err(|e| format!("打开更新页面失败: {e}"))?;
+
+    Ok(true)
+}
+
+/// 组装 `cmd /C start ...`。终端里跑的 `claude` 等命令按这里的 PATH 查找：BetterCCS
 /// 被 MSI 自动重启后只剩机器级 PATH（#6061），或是在装 CLI 之前就已启动，进程 PATH
 /// 都会缺用户级条目（#3877、#8446）。和检测、生命周期命令（#8173）一样用补全后的 PATH，
-/// 只影响启动的终端，不改 CC Switch 自身的环境；Windows Terminal 从命令行开新标签时
+/// 只影响启动的终端，不改 BetterCCS 自身的环境；Windows Terminal 从命令行开新标签时
 /// 也沿用调用方的环境。
 #[cfg(target_os = "windows")]
 fn windows_start_command(
@@ -5660,11 +5701,11 @@ mod tests {
     fn portable_zip_url_matches_release_asset_names() {
         assert_eq!(
             portable_zip_url("4.0.12", false).as_deref(),
-            Some("https://github.com/farion1231/cc-switch/releases/download/v4.0.12/CC-Switch-v4.0.12-Windows-Portable.zip")
+            Some("https://github.com/WEP-56/BetterCCS/releases/download/v4.0.12/BetterCCS-v4.0.12-Windows-Portable.zip")
         );
         assert_eq!(
             portable_zip_url("v4.1.0-beta.1", true).as_deref(),
-            Some("https://github.com/farion1231/cc-switch/releases/download/v4.1.0-beta.1/CC-Switch-v4.1.0-beta.1-Windows-arm64-Portable.zip")
+            Some("https://github.com/WEP-56/BetterCCS/releases/download/v4.1.0-beta.1/BetterCCS-v4.1.0-beta.1-Windows-arm64-Portable.zip")
         );
         for bad in ["", "v", "latest", "4.0/../x", "4.0.0?x=1"] {
             assert!(portable_zip_url(bad, false).is_none(), "{bad}");

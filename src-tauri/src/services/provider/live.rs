@@ -999,8 +999,8 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
     if crate::mode::legacy::live_taken_over(&state.db, &app_type) {
         return Err(AppError::localized(
             "provider.import.live_taken_over",
-            "Live 配置还指着已下线的本地路由（包含占位符），不能导入为供应商。请先恢复 Live 配置或重启一次让 CC Switch 把它写回直连。",
-            "The live config still points at the removed local router (contains placeholders) and cannot be imported as a provider. Restore the live config, or restart CC Switch so it writes direct config back.",
+            "Live 配置还指着已下线的本地路由（包含占位符），不能导入为供应商。请先恢复 Live 配置或重启一次让 BetterCCS 把它写回直连。",
+            "The live config still points at the removed local router (contains placeholders) and cannot be imported as a provider. Restore the live config, or restart BetterCCS so it writes direct config back.",
         ));
     }
 
@@ -1174,7 +1174,7 @@ pub(crate) fn remove_opencode_provider_from_live(provider_id: &str) -> Result<()
 /// Import all providers from OpenCode live config to database
 ///
 /// This imports existing providers from ~/.config/opencode/opencode.json
-/// into the CC Switch database. Each provider found will be added to the
+/// into the BetterCCS database. Each provider found will be added to the
 /// database with is_current set to false.
 pub fn import_opencode_providers_from_live(state: &AppState) -> Result<usize, AppError> {
     use crate::opencode_config;
@@ -1270,7 +1270,7 @@ pub fn import_opencode_providers_from_live(state: &AppState) -> Result<usize, Ap
 /// Import all providers from OpenClaw live config to database
 ///
 /// This imports existing providers from ~/.openclaw/openclaw.json
-/// into the CC Switch database. Each provider found will be added to the
+/// into the BetterCCS database. Each provider found will be added to the
 /// database with is_current set to false.
 pub fn import_openclaw_providers_from_live(state: &AppState) -> Result<usize, AppError> {
     use crate::openclaw_config;
@@ -1358,7 +1358,7 @@ pub fn import_openclaw_providers_from_live(state: &AppState) -> Result<usize, Ap
 /// Import all providers from Hermes live config to database
 ///
 /// This imports existing providers from ~/.hermes/config.yaml
-/// into the CC Switch database. Each provider found will be added to the
+/// into the BetterCCS database. Each provider found will be added to the
 /// database with is_current set to false.
 pub fn import_hermes_providers_from_live(state: &AppState) -> Result<usize, AppError> {
     use crate::hermes_config;

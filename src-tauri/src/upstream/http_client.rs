@@ -317,7 +317,7 @@ fn system_proxy_points_to_loopback() -> bool {
 }
 
 fn proxy_points_to_loopback(value: &str) -> bool {
-    // 检查是否指向 CC Switch 自己的代理端口
+    // 检查是否指向 BetterCCS 自己的代理端口
     // 只有指向自己的代理才需要跳过，避免递归
     fn is_cc_switch_proxy_port(port: Option<u16>) -> bool {
         port == Some(LEGACY_PROXY_PORT)
@@ -325,7 +325,7 @@ fn proxy_points_to_loopback(value: &str) -> bool {
 
     if let Ok(parsed) = url::Url::parse(value) {
         if let Some(host) = parsed.host_str() {
-            // 只有当主机是 loopback 且端口是 CC Switch 的端口时才返回 true
+            // 只有当主机是 loopback 且端口是 BetterCCS 的端口时才返回 true
             return host_is_loopback(host) && is_cc_switch_proxy_port(parsed.port());
         }
         return false;
@@ -400,7 +400,7 @@ mod tests {
     #[test]
     fn test_mask_url_does_not_panic_on_multibyte_boundary() {
         // 一个无法被 Url::parse 解析、且在字节 20 处正好切在多字节字符中间的字符串。
-        // 回归 https://github.com/farion1231/cc-switch 的 mask_url 越界 panic。
+        // 回归 https://github.com/WEP-56/BetterCCS 的 mask_url 越界 panic。
         let bad = "这是一个无效的代理地址不能解析";
         assert!(bad.len() > 20 && !bad.is_char_boundary(20));
         let masked = mask_url(bad);
@@ -505,7 +505,7 @@ mod tests {
     #[test]
     #[serial_test::serial]
     fn test_proxy_points_to_loopback() {
-        // 只有指向 CC Switch 自己端口的 loopback 地址才返回 true
+        // 只有指向 BetterCCS 自己端口的 loopback 地址才返回 true
         assert!(proxy_points_to_loopback("http://127.0.0.1:15721"));
         assert!(proxy_points_to_loopback("socks5://localhost:15721"));
         assert!(proxy_points_to_loopback("127.0.0.1:15721"));
@@ -537,7 +537,7 @@ mod tests {
             std::env::remove_var(key);
         }
 
-        // 指向 CC Switch 端口的代理应该被跳过
+        // 指向 BetterCCS 端口的代理应该被跳过
         std::env::set_var("HTTP_PROXY", "http://127.0.0.1:15721");
         assert!(system_proxy_points_to_loopback());
 

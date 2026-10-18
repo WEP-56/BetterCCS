@@ -73,12 +73,9 @@ export const settingsApi = {
     return await invoke("restart_app");
   },
 
-  async installUpdateAndRestart(): Promise<boolean> {
-    return await invoke("install_update_and_restart");
-  },
-
-  async checkUpdates(): Promise<void> {
-    await invoke("check_for_updates");
+  /** 打开本仓库某个版本的 Releases 页（打包不签名，升级靠手动下载覆盖安装） */
+  async openAppUpdateDownload(version: string): Promise<void> {
+    await invoke("open_app_update_download", { version });
   },
 
   async openPortableUpdateDownload(version: string): Promise<void> {

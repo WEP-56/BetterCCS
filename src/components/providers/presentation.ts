@@ -1,7 +1,10 @@
 import type { TFunction } from "i18next";
 import type { Provider } from "@/types";
 import type { AppId } from "@/lib/api";
-import { isOfficialAccount, providerFormatUnsupported } from "@/utils/providerCapabilities";
+import {
+  isOfficialAccount,
+  providerFormatUnsupported,
+} from "@/utils/providerCapabilities";
 
 /**
  * 供应商卡片怎么画（v7）：当前那张的模式色、状态文字或按钮、徽标。由列表按应用算好交给
@@ -9,12 +12,7 @@ import { isOfficialAccount, providerFormatUnsupported } from "@/utils/providerCa
  */
 export type CardTone = "direct" | "neutral";
 
-export type ChipTone =
-  | "outline"
-  | "direct"
-  | "success"
-  | "warning"
-  | "danger";
+export type ChipTone = "outline" | "direct" | "success" | "warning" | "danger";
 
 export interface CardChip {
   key: string;

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSettingsQuery } from "@/lib/query";
 import type { Settings } from "@/types";
 
-type Language = "zh" | "zh-TW" | "en" | "ja" | "tr";
+type Language = "zh" | "en";
 
 export type SettingsFormState = Omit<Settings, "language"> & {
   language: Language;
@@ -13,28 +13,12 @@ const normalizeLanguage = (lang?: string | null): Language => {
   if (!lang) return "zh";
   const normalized = lang.toLowerCase().replace(/_/g, "-");
 
-  if (normalized === "zh") {
-    return "zh";
+  // 旧版本存过的 zh-TW / ja / tr 已不再提供：繁中落到简中，日文与土耳其文落到英文
+  if (normalized === "ja" || normalized === "tr") {
+    return "en";
   }
 
-  if (
-    normalized === "zh-tw" ||
-    normalized.startsWith("zh-hant") ||
-    normalized.startsWith("zh-hk") ||
-    normalized.startsWith("zh-mo")
-  ) {
-    return "zh-TW";
-  }
-
-  if (normalized === "en" || normalized === "ja" || normalized === "tr") {
-    return normalized;
-  }
-
-  if (normalized.startsWith("zh")) {
-    return "zh";
-  }
-
-  return "zh";
+  return normalized.startsWith("zh") ? "zh" : "en";
 };
 
 const isSupportedLanguage = (lang?: string | null): boolean => {

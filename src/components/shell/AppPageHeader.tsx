@@ -132,9 +132,7 @@ export function AppPageHeader({
         </div>
       )}
 
-      {!truncateTitle && (
-        <div {...DRAG_REGION_ATTR} className="flex-1" />
-      )}
+      {!truncateTitle && <div {...DRAG_REGION_ATTR} className="flex-1" />}
 
       <div
         className={cn(

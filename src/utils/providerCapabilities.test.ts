@@ -67,7 +67,6 @@ describe("providerFormatUnsupported", () => {
       "managed_account",
     );
     expect(resolveCodexOfficialIdentity("claude", managed)).toBeNull();
-
   });
 
   it("does not infer Codex login identity from a stale Official category", () => {
@@ -275,9 +274,9 @@ describe("providerFormatUnsupported", () => {
     });
 
     it("apiFormat 缺省视为原生直连，不需要路由", () => {
-      expect(providerFormatUnsupported("claude", mkProvider({ meta: {} }))).toBe(
-        false,
-      );
+      expect(
+        providerFormatUnsupported("claude", mkProvider({ meta: {} })),
+      ).toBe(false);
     });
 
     it("openai_chat 需要路由", () => {

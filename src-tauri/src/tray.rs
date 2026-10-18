@@ -1,8 +1,8 @@
 //! 托盘菜单（v7）
 //!
-//! 结构：问题区（出问题才有）→ 反馈行（托盘里刚做完要重启才生效的操作）→ 打开 CC Switch →
+//! 结构：问题区（出问题才有）→ 反馈行（托盘里刚做完要重启才生效的操作）→ 打开 BetterCCS →
 //! 切换式应用的子菜单（Claude Code、Claude Desktop、Codex、Gemini CLI、Grok Build；在「应用」页
-//! 隐藏的不列）→ 轻量模式 → 打开官方网站 / 退出 CC Switch。累加式应用（OpenCode / OpenClaw /
+//! 隐藏的不列）→ 轻量模式 → 打开项目主页 / 退出 BetterCCS。累加式应用（OpenCode / OpenClaw /
 //! Hermes / Pi / MiniMax Code）不进托盘；托盘里不切模式、不启停路由服务。
 //!
 //! 分三层：`collect_*` 从数据库和设备状态读出快照，`build_menu_model` 把快照变成纯数据的菜单
@@ -81,7 +81,7 @@ static TRAY_SECTION_SUBMENUS: Lazy<Mutex<HashMap<AppType, Submenu<tauri::Wry>>>>
 #[derive(Clone, Copy)]
 pub struct TrayTexts {
     pub show_main: &'static str,
-    pub open_website: &'static str,
+    pub open_repo: &'static str,
     pub lightweight_mode: &'static str,
     pub quit: &'static str,
     pub projects_label: &'static str,
@@ -135,9 +135,7 @@ pub struct TrayTexts {
 /// 其余认得出的语言 → `en`，区域为空时回退到 `zh`（与前端默认一致）。
 fn map_locale_to_tray_language(locale: &str) -> &'static str {
     let locale = locale.to_lowercase();
-    if locale.starts_with("zh") {
-        "zh"
-    } else if locale.is_empty() {
+    if locale.starts_with("zh") || locale.is_empty() {
         "zh"
     } else {
         "en"
@@ -156,10 +154,10 @@ impl TrayTexts {
     pub fn from_language(language: &str) -> Self {
         match language {
             "en" => Self {
-                show_main: "Open CC Switch",
-                open_website: "Open official website",
+                show_main: "Open BetterCCS",
+                open_repo: "Open project page",
                 lightweight_mode: "Lightweight mode",
-                quit: "Quit CC Switch",
+                quit: "Quit BetterCCS",
                 projects_label: "Projects",
                 no_project_label: "No project",
                 header_direct: "Direct",
@@ -169,8 +167,8 @@ impl TrayTexts {
                 almost_out: "almost out",
                 needs_attention: "needs attention",
                 problem_switch_failed: "{app} didn't switch: {reason}",
-                problem_more: "{count} more issues — open CC Switch to see them",
-                tooltip_problem: "CC Switch · Needs attention: {problem}",
+                problem_more: "{count} more issues — open BetterCCS to see them",
+                tooltip_problem: "BetterCCS · Needs attention: {problem}",
                 feedback_switched: "{app} switched to {name}. Restart {app} to apply",
                 feedback_profile: "Applied project \u{201c}{name}\u{201d} to {app}",
                 tier_five_hour: "5-hour",
@@ -199,10 +197,10 @@ impl TrayTexts {
                 quota_used: false,
             },
             _ => Self {
-                show_main: "打开 CC Switch",
-                open_website: "打开官方网站",
+                show_main: "打开 BetterCCS",
+                open_repo: "打开项目主页",
                 lightweight_mode: "轻量模式",
-                quit: "退出 CC Switch",
+                quit: "退出 BetterCCS",
                 projects_label: "项目",
                 no_project_label: "不使用项目",
                 header_direct: "直连",
@@ -212,8 +210,8 @@ impl TrayTexts {
                 almost_out: "快用完",
                 needs_attention: "需要处理",
                 problem_switch_failed: "{app} 没切换成功：{reason}",
-                problem_more: "还有 {count} 个问题，打开 CC Switch 查看",
-                tooltip_problem: "CC Switch · 需要处理：{problem}",
+                problem_more: "还有 {count} 个问题，打开 BetterCCS 查看",
+                tooltip_problem: "BetterCCS · 需要处理：{problem}",
                 feedback_switched: "{app} 已切换到 {name}，重启 {app} 后生效",
                 feedback_profile: "已把项目「{name}」用到 {app}",
                 tier_five_hour: "5 小时",
@@ -1411,7 +1409,7 @@ fn build_menu_model(
         menu.push(TrayEntry::Separator);
     }
 
-    // 窗口找不回来时托盘是唯一入口，「打开 CC Switch」一直放在最上面。
+    // 窗口找不回来时托盘是唯一入口，「打开 BetterCCS」一直放在最上面。
     menu.push(TrayEntry::item("show_main", texts.show_main));
     menu.push(TrayEntry::Separator);
 
@@ -1427,7 +1425,7 @@ fn build_menu_model(
         lightweight,
     ));
     menu.push(TrayEntry::Separator);
-    menu.push(TrayEntry::item("open_website", texts.open_website));
+    menu.push(TrayEntry::item("open_repo", texts.open_repo));
     // 不换成系统自带的 quit：它不经过 app.exit(0) 的退出流程。
     menu.push(TrayEntry::item("quit", texts.quit));
     menu
@@ -1640,10 +1638,10 @@ fn icon_with_problem_dot(icon: &Image<'_>, template: bool) -> Image<'static> {
     Image::new_owned(rgba, width, height)
 }
 
-/// 悬停提示：平时 `CC Switch`，出问题时 `CC Switch · 需要处理：<问题区第一条>`。额度不算问题。
+/// 悬停提示：平时 `BetterCCS`，出问题时 `BetterCCS · 需要处理：<问题区第一条>`。额度不算问题。
 fn tray_tooltip(texts: &TrayTexts, problems: &[TrayProblem]) -> String {
     match problems.first() {
-        None => "CC Switch".to_string(),
+        None => "BetterCCS".to_string(),
         Some(problem) => truncate_chars(
             &fill(
                 texts.tooltip_problem,
@@ -2128,9 +2126,12 @@ pub fn handle_tray_menu_event(app: &tauri::AppHandle, event_id: &str) {
 
     match event_id {
         "show_main" => show_main_window(app),
-        "open_website" => {
-            if let Err(e) = app.opener().open_url("https://ccswitch.io", None::<String>) {
-                log::error!("打开官方网站失败: {e}");
+        "open_repo" => {
+            if let Err(e) = app
+                .opener()
+                .open_url("https://github.com/WEP-56/BetterCCS", None::<String>)
+            {
+                log::error!("打开项目主页失败: {e}");
             }
         }
         "lightweight_mode" => {
@@ -3004,7 +3005,7 @@ mod tests {
     }
 
     #[test]
-    fn top_level_order_is_open_apps_lightweight_website_quit() {
+    fn top_level_order_is_open_apps_lightweight_repo_quit() {
         let apps = [
             snapshot(AppType::Claude, vec![entry("kimi", "Kimi For Coding")]),
             snapshot(AppType::GrokBuild, vec![]),
@@ -3013,15 +3014,15 @@ mod tests {
         assert_eq!(
             texts_of(&menu),
             [
-                "打开 CC Switch",
+                "打开 BetterCCS",
                 "---",
                 "Claude Code · Kimi For Coding",
                 "Grok Build · 添加供应商…",
                 "---",
                 "轻量模式",
                 "---",
-                "打开官方网站",
-                "退出 CC Switch",
+                "打开项目主页",
+                "退出 BetterCCS",
             ]
         );
         assert!(matches!(&menu[3], TrayEntry::Item { id, .. } if id == "nav:add:grokbuild"));

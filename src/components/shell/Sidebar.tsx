@@ -148,7 +148,7 @@ function SidebarTopBar({
             className="pointer-events-none h-5 w-5 shrink-0"
           />
           <span className="pointer-events-none me-auto min-w-0 truncate text-strong font-semibold text-fg-1">
-            CC Switch
+            {t("app.title")}
           </span>
           {toggleButton}
         </div>
@@ -193,7 +193,7 @@ function SidebarTopBar({
             className="h-[22px] w-[22px] shrink-0"
           />
           <span className="truncate text-strong font-semibold text-fg-1">
-            CC Switch
+            {t("app.title")}
           </span>
         </span>
       )}
@@ -458,7 +458,7 @@ function NavItem({
   alert?: string;
   /** 圆点：有更新 */
   dot?: boolean;
-  /** 工具更新用中性色（很多人不想追新）；CC Switch 自己的更新用绿色，和工具更新分开 */
+  /** 工具更新用中性色（很多人不想追新）；本应用自己的更新用绿色，和工具更新分开 */
   dotTone?: "neutral" | "success";
   /** 圆点放在行尾（设置目录里的「关于」），而不是图标角上 */
   endDot?: boolean;
@@ -544,9 +544,7 @@ function NavItem({
         aria-current={selected ? "page" : undefined}
         className={cn(
           "flex h-9 shrink-0 items-center gap-2.5 rounded-control px-2.5 text-start transition-colors hover:bg-subtle",
-          compact
-            ? "min-w-0 flex-1 bg-surface hover:bg-subtle"
-            : "mx-2",
+          compact ? "min-w-0 flex-1 bg-surface hover:bg-subtle" : "mx-2",
           selected && "bg-selected font-medium hover:bg-selected",
         )}
       >
@@ -644,7 +642,10 @@ function SettingsDirectory({
       <div
         role="group"
         aria-label={t("nav.settings")}
-        className={cn("flex min-h-0 flex-1 flex-col gap-0.5", collapsed && "mt-2")}
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-0.5",
+          collapsed && "mt-2",
+        )}
       >
         {SETTINGS_ITEMS.map(({ section, icon }) => (
           <NavItem
@@ -667,7 +668,7 @@ function SettingsDirectory({
       </div>
       {!collapsed && version && (
         <div className="shrink-0 px-4 pb-4 text-caption text-fg-3">
-          CC Switch v{version}
+          {t("app.title")} v{version}
         </div>
       )}
     </>

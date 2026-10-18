@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'
-  # 手动触发即干跑：完整编译、签名、公证，产物只留在 workflow 里，不建 GitHub Release
+  # 手动触发即干跑：完整编译、打包，产物只留在 workflow 里，不建 GitHub Release
   workflow_dispatch:
 
 permissions:
@@ -15,6 +15,9 @@ concurrency:
   group: release-${{ github.event_name }}-${{ github.ref_name }}
   cancel-in-progress: true
 
+# 本仓库发布无需自定义 secrets：不做证书签名、公证或自动更新包；macOS 使用 ad-hoc 签名。
+# 因此这里没有 Tauri 更新私钥、也没有 Apple 证书与账号步骤；用户从 Releases 页
+# 手动下载安装包覆盖升级（应用内「检查更新」也是打开这一页）。
 jobs:
   # 应用内更新摘要（src/whats-new/<版本>.json，见同目录 README）随安装包发出。漏写的话
   # 升级到这一版的用户什么也看不到；结构写坏的话弹窗渲染出错，整个应用落进错误页。
@@ -28,7 +31,7 @@ jobs:
         uses: actions/checkout@v6
 
       # 手动干跑可以在任意分支上跑，那时这一版的摘要可能还没写，只在推 tag 时要求存在
-      - name: Require this version's summary
+      - name: Validate release version and summary
         if: github.event_name == 'push' && github.ref_type == 'tag'
         env:
           TAG: ${{ github.ref_name }}
@@ -39,6 +42,22 @@ jobs:
             echo "::error file=$file::Missing $file. Write the in-app summary for $TAG (see src/whats-new/README.md); use \"items\": [] to skip the popup."
             exit 1
           fi
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const expected = process.env.TAG.replace(/^v/, '');
+          const json = (path) => JSON.parse(readFileSync(path, 'utf8'));
+          const versions = {
+            'package.json': json('package.json').version,
+            'src-tauri/tauri.conf.json': json('src-tauri/tauri.conf.json').version,
+            'src-tauri/Cargo.toml': readFileSync('src-tauri/Cargo.toml', 'utf8').match(/^version\s*=\s*"([^"]+)"/m)?.[1],
+            [`src/whats-new/${expected}.json`]: json(`src/whats-new/${expected}.json`).version,
+          };
+          for (const [path, version] of Object.entries(versions)) {
+            if (version !== expected) {
+              throw new Error(`${path}: version ${version} does not match tag ${process.env.TAG}`);
+            }
+          }
+          NODE
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -73,7 +92,6 @@ jobs:
   release:
     needs: whats-new-check
     runs-on: ${{ matrix.os }}
-    environment: release
     strategy:
       fail-fast: false
       matrix:
@@ -150,12 +168,6 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      - name: Prepare Tauri signing key
-        uses: ./.github/actions/prepare-tauri-signing-key
-        with:
-          private-key: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
       - name: Build Tauri App (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -184,76 +196,59 @@ jobs:
           $targetRoot = if ($isArm64) { 'src-tauri/target/aarch64-pc-windows-msvc/release' } else { 'src-tauri/target/release' }
           $assetSuffix = if ($isArm64) { '-arm64' } else { '' }
 
-          # 仅打包 MSI 安装器 + .sig（用于 Updater）
           $msi = Get-ChildItem -Path (Join-Path $targetRoot 'bundle/msi') -Recurse -Include *.msi -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($null -eq $msi) {
             # 兜底：全局搜索 .msi
             $msi = Get-ChildItem -Path (Join-Path $targetRoot 'bundle') -Recurse -Include *.msi -ErrorAction SilentlyContinue | Select-Object -First 1
           }
           if ($null -ne $msi) {
-            $dest = "CC-Switch-$VERSION-Windows$assetSuffix.msi"
+            $dest = "BetterCCS-$VERSION-Windows$assetSuffix.msi"
             Copy-Item $msi.FullName (Join-Path release-assets $dest)
             Write-Host "Installer copied: $dest"
-            $sigPath = "$($msi.FullName).sig"
-            if (Test-Path $sigPath) {
-              Copy-Item $sigPath (Join-Path release-assets ("$dest.sig"))
-              Write-Host "Signature copied: $dest.sig"
-            } else {
-              throw "Signature not found for $($msi.Name)"
-            }
           } else {
             throw "No Windows MSI installer found ($env:WINDOWS_RELEASE_ARCH)"
           }
 
-          # 绿色版（portable）：仅可执行文件打 zip（不参与 Updater）
+          # 绿色版（portable）：仅可执行文件打 zip
           $exeCandidates = if ($isArm64) {
-            @('src-tauri/target/aarch64-pc-windows-msvc/release/cc-switch.exe')
+            @('src-tauri/target/aarch64-pc-windows-msvc/release/betterccs.exe')
           } else {
             @(
-              'src-tauri/target/release/cc-switch.exe',
-              'src-tauri/target/x86_64-pc-windows-msvc/release/cc-switch.exe'
+              'src-tauri/target/release/betterccs.exe',
+              'src-tauri/target/x86_64-pc-windows-msvc/release/betterccs.exe'
             )
           }
           $exePath = $exeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
           if ($null -ne $exePath) {
-            $portableDir = 'release-assets/CC-Switch-Portable'
+            $portableDir = 'release-assets/BetterCCS-Portable'
             New-Item -ItemType Directory -Force -Path $portableDir | Out-Null
             Copy-Item $exePath $portableDir
             $portableIniPath = Join-Path $portableDir 'portable.ini'
             $portableContent = if ($isArm64) {
               @(
-                '# CC Switch portable ARM64 build marker',
+                '# BetterCCS portable ARM64 build marker',
                 'portable=true',
                 'arch=arm64'
               )
             } else {
               @(
-                '# CC Switch portable build marker',
+                '# BetterCCS portable build marker',
                 'portable=true'
               )
             }
             $portableContent | Set-Content -Path $portableIniPath -Encoding UTF8
-            $portableZip = "release-assets/CC-Switch-$VERSION-Windows$assetSuffix-Portable.zip"
+            $portableZip = "release-assets/BetterCCS-$VERSION-Windows$assetSuffix-Portable.zip"
             Compress-Archive -Path "$portableDir/*" -DestinationPath $portableZip -Force
             Remove-Item -Recurse -Force $portableDir
-            Write-Host "Windows portable zip created: CC-Switch-$VERSION-Windows$assetSuffix-Portable.zip"
-          } elseif ($isArm64) {
-            throw 'Portable ARM64 exe not found'
+            Write-Host "Windows portable zip created: BetterCCS-$VERSION-Windows$assetSuffix-Portable.zip"
           } else {
-            Write-Warning 'Portable exe not found'
+            throw "Portable exe not found ($env:WINDOWS_RELEASE_ARCH)"
           }
 
       - name: List prepared assets
         shell: bash
         run: |
           ls -la release-assets || true
-
-      - name: Collect Signatures
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Collected signatures (if any alongside artifacts):"
-          ls -la release-assets/*.sig || echo "No signatures found"
 
       - name: Upload release artifacts to workflow
         uses: actions/upload-artifact@v7
@@ -262,20 +257,11 @@ jobs:
           path: release-assets/*
           if-no-files-found: error
 
-      - name: List generated bundles (debug)
-        if: always()
-        shell: bash
-        run: |
-          echo "Listing bundles in src-tauri/target..."
-          find src-tauri/target -maxdepth 4 -type f -name "*.*" 2>/dev/null || true
-
-  # macOS 两个架构分两台机器同时编译（以前在一台机器上串行），再由 macos-release 合并签名。
-  # 编译不需要任何 secret；挂 release environment 只是为了和其它平台在开头一起批准一次。
+  # macOS 两个架构分两台机器同时编译（以前在一台机器上串行），再由 macos-release 合并打包。
   macos-binary:
     name: Build macOS binary (${{ matrix.target }})
     needs: whats-new-check
     runs-on: macos-14
-    environment: release
     strategy:
       matrix:
         target: [aarch64-apple-darwin, x86_64-apple-darwin]
@@ -328,8 +314,7 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      # 编译只做一次：编译失败是确定性的，重试没有意义。签名和公证依赖 Apple 的服务，
-      # 在 macos-release 里单独重试，不会再重编。
+      # 编译只做一次：编译失败是确定性的，重试没有意义。
       - name: Build Tauri App (${{ matrix.target }})
         timeout-minutes: 60
         run: pnpm tauri build --target ${{ matrix.target }} --no-bundle
@@ -338,12 +323,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: macos-binary-${{ matrix.target }}
-          path: src-tauri/target/${{ matrix.target }}/release/cc-switch
+          path: src-tauri/target/${{ matrix.target }}/release/betterccs
           if-no-files-found: error
           retention-days: 1
 
-  # 合并成 universal 二进制后打包、签名、公证。不挂 environment：它依赖的 macos-binary
-  # 已经过了 release 的批准，这里再挂会在半路要求第二次批准。secret 都是仓库级的。
+  # 合并成 universal 二进制后打包成 zip / dmg。不做签名与公证（不需要 Apple 账号与证书）：
+  # macOS 会提示"无法验证开发者"，用户右键打开或在「隐私与安全性」里允许即可。
   macos-release:
     name: Bundle macOS release
     runs-on: macos-14
@@ -396,53 +381,6 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      - name: Prepare Tauri signing key
-        uses: ./.github/actions/prepare-tauri-signing-key
-        with:
-          private-key: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: Import Apple signing certificate
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Decode .p12 certificate from base64
-          CERT_PATH="$RUNNER_TEMP/certificate.p12"
-          printf '%s' "${{ secrets.APPLE_CERTIFICATE }}" | (base64 --decode 2>/dev/null || base64 -D) > "$CERT_PATH"
-
-          # Save original default keychain for cleanup
-          ORIGINAL_DEFAULT_KEYCHAIN=$(security default-keychain -d user | tr -d '"' | xargs)
-          echo "ORIGINAL_DEFAULT_KEYCHAIN=$ORIGINAL_DEFAULT_KEYCHAIN" >> "$GITHUB_ENV"
-
-          # Create temporary keychain
-          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
-          security create-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security default-keychain -s "$KEYCHAIN_PATH"
-          security unlock-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" "$KEYCHAIN_PATH"
-
-          # Import certificate
-          security import "$CERT_PATH" \
-            -k "$KEYCHAIN_PATH" \
-            -P "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" \
-            -T /usr/bin/codesign \
-            -T /usr/bin/security
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${{ secrets.KEYCHAIN_PASSWORD }}" "$KEYCHAIN_PATH"
-
-          # Dynamically resolve signing identity (must be "Developer ID Application")
-          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
-            | grep "Developer ID Application" | grep -oE '"[^"]+"' | head -1 | tr -d '"')
-          if [ -z "$IDENTITY" ]; then
-            echo "❌ No 'Developer ID Application' identity found — listing all identities:" >&2
-            security find-identity -v -p codesigning "$KEYCHAIN_PATH"
-            exit 1
-          fi
-          echo "✅ Signing identity: $IDENTITY"
-          echo "APPLE_SIGNING_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
-
-          # Cleanup certificate file
-          rm -f "$CERT_PATH"
-
       - name: Download macOS binaries
         uses: actions/download-artifact@v8
         with:
@@ -457,50 +395,20 @@ jobs:
           set -euo pipefail
           out=src-tauri/target/universal-apple-darwin/release
           mkdir -p "$out"
-          lipo -create -output "$out/cc-switch" \
-            macos-binaries/macos-binary-aarch64-apple-darwin/cc-switch \
-            macos-binaries/macos-binary-x86_64-apple-darwin/cc-switch
-          chmod +x "$out/cc-switch"
-          lipo -info "$out/cc-switch"
+          lipo -create -output "$out/betterccs" \
+            macos-binaries/macos-binary-aarch64-apple-darwin/betterccs \
+            macos-binaries/macos-binary-x86_64-apple-darwin/betterccs
+          chmod +x "$out/betterccs"
+          lipo -info "$out/betterccs"
 
-      # 只打 .app（连同 updater 的 .app.tar.gz 和 .sig）：发布用的 DMG 在下面由 create-dmg 制作，
-      # Tauri 自己的 DMG 从来不上传。失败只重试这一步，不会重编。
-      - name: Bundle, sign and notarize (macOS)
+      # 只打 .app；发布用的 DMG 在下面由 create-dmg 制作（Tauri 自己的 DMG 从来不上传）。
+      # `APPLE_SIGNING_IDENTITY=-` 是 ad-hoc 签名：没有证书也能让包在本机可用。
+      - name: Bundle (macOS, ad-hoc signed)
         shell: bash
         timeout-minutes: 45
         env:
-          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          set -euo pipefail
-          max_attempts=3
-          for attempt in $(seq 1 "$max_attempts"); do
-            echo "=== macOS bundle/notarization attempt ${attempt}/${max_attempts} ==="
-            bundle_log="$RUNNER_TEMP/tauri-bundle-macos-${attempt}.log"
-            if pnpm tauri bundle --target universal-apple-darwin --bundles app 2>&1 | tee "$bundle_log"; then
-              echo "✅ macOS bundle/notarization succeeded"
-              exit 0
-            fi
-
-            # Apple 拒绝凭据或账号协议（401/403，例如 "A required agreement is missing or has expired"）
-            # 只能人工处理，重试没有意义。
-            if grep -qE 'HTTP status code: 40[13]' "$bundle_log"; then
-              echo "❌ Apple rejected the notarization request (HTTP 401/403); retrying cannot fix this." >&2
-              echo "   If it mentions an agreement, the Account Holder must accept it at developer.apple.com, then re-run this job." >&2
-              exit 1
-            fi
-
-            if [ "$attempt" -eq "$max_attempts" ]; then
-              echo "❌ macOS bundle/notarization failed after ${max_attempts} attempts" >&2
-              exit 1
-            fi
-
-            sleep_seconds=$((attempt * 60))
-            echo "⚠️ macOS bundle/notarization failed, retrying in ${sleep_seconds}s..."
-            sleep "$sleep_seconds"
-          done
+          APPLE_SIGNING_IDENTITY: "-"
+        run: pnpm tauri bundle --target universal-apple-darwin --bundles app
 
       - name: Prepare macOS Assets
         shell: bash
@@ -510,124 +418,6 @@ jobs:
           # e.g., v3.5.0；手动干跑时是分支名，斜杠会被当成目录，换成 -
           VERSION="${GITHUB_REF_NAME//\//-}"
 
-          # Locate bundle artifacts
-          TAR_GZ=""; APP_PATH=""
-          for path in \
-            "src-tauri/target/universal-apple-darwin/release/bundle/macos" \
-            "src-tauri/target/aarch64-apple-darwin/release/bundle/macos" \
-            "src-tauri/target/x86_64-apple-darwin/release/bundle/macos" \
-            "src-tauri/target/release/bundle/macos"; do
-            if [ -d "$path" ]; then
-              [ -z "$TAR_GZ" ]   && TAR_GZ=$(find "$path" -maxdepth 1 -name "*.tar.gz" -type f | head -1 || true)
-              [ -z "$APP_PATH" ] && APP_PATH=$(find "$path" -maxdepth 1 -name "*.app" -type d | head -1 || true)
-            fi
-          done
-
-          if [ -z "$TAR_GZ" ]; then
-            echo "❌ No macOS .tar.gz updater artifact found" >&2
-            exit 1
-          fi
-          if [ -z "$APP_PATH" ]; then
-            echo "❌ No .app found" >&2
-            exit 1
-          fi
-
-          # Staple notarization ticket to .app (Tauri already notarized it)
-          xcrun stapler staple "$APP_PATH"
-          echo "✅ .app stapled"
-
-          # 1) Collect .tar.gz (updater artifact)
-          NEW_TAR_GZ="CC-Switch-${VERSION}-macOS.tar.gz"
-          cp "$TAR_GZ" "release-assets/$NEW_TAR_GZ"
-          if [ ! -f "$TAR_GZ.sig" ]; then
-            echo "❌ Updater signature not found: $TAR_GZ.sig" >&2
-            exit 1
-          fi
-          cp "$TAR_GZ.sig" "release-assets/$NEW_TAR_GZ.sig"
-          echo "macOS updater artifact copied: $NEW_TAR_GZ"
-
-          # 2) Collect .app as zip
-          NEW_ZIP="CC-Switch-${VERSION}-macOS.zip"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "release-assets/$NEW_ZIP"
-          echo "macOS zip ready: $NEW_ZIP"
-
-          # 3) Create styled DMG with create-dmg (Tauri's built-in DMG styling doesn't work on CI)
-          if [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
-            echo "❌ APPLE_SIGNING_IDENTITY is missing before DMG creation" >&2
-            exit 1
-          fi
-
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install create-dmg
-          NEW_DMG="CC-Switch-${VERSION}-macOS.dmg"
-          DMG_STAGE_DIR="$RUNNER_TEMP/dmg-stage"
-          rm -rf "$DMG_STAGE_DIR"
-          mkdir -p "$DMG_STAGE_DIR"
-          ditto "$APP_PATH" "$DMG_STAGE_DIR/CC Switch.app"
-
-          create-dmg \
-            --volname "CC Switch" \
-            --background "src-tauri/icons/dmg-background.png" \
-            --window-size 660 400 \
-            --window-pos 200 120 \
-            --icon-size 80 \
-            --icon "CC Switch.app" 180 220 \
-            --hide-extension "CC Switch.app" \
-            --app-drop-link 480 220 \
-            --codesign "$APPLE_SIGNING_IDENTITY" \
-            --no-internet-enable \
-            "release-assets/$NEW_DMG" \
-            "$DMG_STAGE_DIR"
-
-          rm -rf "$DMG_STAGE_DIR"
-          echo "✅ Styled DMG created: $NEW_DMG"
-
-      - name: Notarize macOS DMG
-        shell: bash
-        timeout-minutes: 30
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          set -euo pipefail
-
-          DMG_PATH=$(find release-assets -maxdepth 1 -name "*.dmg" -type f | head -1 || true)
-          if [ -z "$DMG_PATH" ]; then
-            echo "❌ No .dmg found in release-assets/ to notarize" >&2
-            exit 1
-          fi
-
-          echo "=== Notarizing DMG: $DMG_PATH ==="
-          max_attempts=3
-          for attempt in $(seq 1 "$max_attempts"); do
-            echo "=== DMG notarization attempt ${attempt}/${max_attempts} ==="
-            if xcrun notarytool submit "$DMG_PATH" \
-              --apple-id "$APPLE_ID" \
-              --password "$APPLE_PASSWORD" \
-              --team-id "$APPLE_TEAM_ID" \
-              --wait; then
-              echo "✅ DMG notarization succeeded"
-              xcrun stapler staple "$DMG_PATH"
-              echo "✅ DMG stapled"
-              break
-            fi
-
-            if [ "$attempt" -eq "$max_attempts" ]; then
-              echo "❌ DMG notarization failed after ${max_attempts} attempts" >&2
-              exit 1
-            fi
-
-            sleep_seconds=$((attempt * 60))
-            echo "⚠️ DMG notarization failed, retrying in ${sleep_seconds}s..."
-            sleep "$sleep_seconds"
-          done
-
-      - name: Verify macOS code signing and notarization
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # Verify .app (from Tauri bundle)
           APP_PATH=""
           for path in \
             "src-tauri/target/universal-apple-darwin/release/bundle/macos" \
@@ -640,31 +430,38 @@ jobs:
           done
 
           if [ -z "$APP_PATH" ]; then
-            echo "❌ No .app found for verification" >&2
+            echo "❌ No .app found" >&2
             exit 1
           fi
-          echo "=== Verifying .app: $APP_PATH ==="
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-          echo "✅ codesign verification passed"
-          spctl -a -t exec -vv "$APP_PATH"
-          echo "✅ spctl assessment passed"
-          xcrun stapler validate "$APP_PATH"
-          echo "✅ .app stapler validation passed"
 
-          # Verify .dmg (from release-assets/, created by create-dmg + notarized)
-          DMG_PATH=$(find release-assets -maxdepth 1 -name "*.dmg" -type f | head -1 || true)
-          if [ -n "$DMG_PATH" ]; then
-            echo "=== Verifying .dmg: $DMG_PATH ==="
-            codesign --verify --verbose=2 "$DMG_PATH"
-            echo "✅ .dmg codesign verification passed"
-            spctl -a -t open --context context:primary-signature -vv "$DMG_PATH"
-            echo "✅ .dmg spctl assessment passed"
-            xcrun stapler validate "$DMG_PATH"
-            echo "✅ .dmg stapler validation passed"
-          else
-            echo "❌ No .dmg found for verification — release would ship without verified DMG" >&2
-            exit 1
-          fi
+          # 1) Collect .app as zip（解压即用）
+          NEW_ZIP="BetterCCS-${VERSION}-macOS.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "release-assets/$NEW_ZIP"
+          echo "macOS zip ready: $NEW_ZIP"
+
+          # 2) Create styled DMG with create-dmg（不做签名：没有证书）
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install create-dmg
+          NEW_DMG="BetterCCS-${VERSION}-macOS.dmg"
+          DMG_STAGE_DIR="$RUNNER_TEMP/dmg-stage"
+          rm -rf "$DMG_STAGE_DIR"
+          mkdir -p "$DMG_STAGE_DIR"
+          ditto "$APP_PATH" "$DMG_STAGE_DIR/BetterCCS.app"
+
+          create-dmg \
+            --volname "BetterCCS" \
+            --background "src-tauri/icons/dmg-background.png" \
+            --window-size 660 400 \
+            --window-pos 200 120 \
+            --icon-size 80 \
+            --icon "BetterCCS.app" 180 220 \
+            --hide-extension "BetterCCS.app" \
+            --app-drop-link 480 220 \
+            --no-internet-enable \
+            "release-assets/$NEW_DMG" \
+            "$DMG_STAGE_DIR"
+
+          rm -rf "$DMG_STAGE_DIR"
+          echo "✅ Styled DMG created: $NEW_DMG"
 
       - name: List prepared assets
         shell: bash
@@ -677,24 +474,6 @@ jobs:
           name: release-assets-macOS
           path: release-assets/*
           if-no-files-found: error
-
-      - name: List generated bundles (debug)
-        if: always()
-        shell: bash
-        run: |
-          echo "Listing bundles in src-tauri/target..."
-          find src-tauri/target -maxdepth 4 -type f -name "*.*" 2>/dev/null || true
-
-      - name: Clean up Apple signing keychain
-        if: always()
-        shell: bash
-        run: |
-          if [ -n "${ORIGINAL_DEFAULT_KEYCHAIN:-}" ]; then
-            security default-keychain -s "$ORIGINAL_DEFAULT_KEYCHAIN" || true
-          fi
-          if [ -f "$RUNNER_TEMP/build.keychain-db" ]; then
-            security delete-keychain "$RUNNER_TEMP/build.keychain-db" || true
-          fi
 
   publish-release:
     name: Publish GitHub Release
@@ -713,105 +492,46 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-      - name: List downloaded release artifacts
+      - name: Validate release assets
         shell: bash
-        run: |
-          set -euo pipefail
-          ls -la release-assets
-
-      # 签名就在刚下载的产物里：latest.json 随安装包一起上传。缺平台时在建 release 之前就失败，
-      # 不会留下一个缺 latest.json 的半成品 release。
-      - name: Generate latest.json
         env:
-          REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          VERSION="${TAG#v}"
-          PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          base_url="https://github.com/$REPO/releases/download/$TAG"
-          # 初始化空平台映射
-          mac_url=""; mac_sig=""
-          win_x64_url=""; win_x64_sig=""
-          win_arm64_url=""; win_arm64_sig=""
-          shopt -s nullglob
-          for sig in release-assets/*.sig; do
-            base=${sig%.sig}
-            fname=$(basename "$base")
-            url="$base_url/$fname"
-            sig_content=$(cat "$sig")
-            case "$fname" in
-              *.tar.gz)
-                # 视为 macOS updater artifact
-                mac_url="$url"; mac_sig="$sig_content";;
-              *-Windows-arm64.msi)
-                win_arm64_url="$url"; win_arm64_sig="$sig_content";;
-              *-Windows.msi)
-                win_x64_url="$url"; win_x64_sig="$sig_content";;
-            esac
+          for suffix in Windows.msi Windows-Portable.zip Windows-arm64.msi Windows-arm64-Portable.zip macOS.dmg macOS.zip; do
+            file="release-assets/BetterCCS-${TAG}-${suffix}"
+            if [ ! -s "$file" ]; then
+              echo "::error::Missing or empty release asset: $file"
+              exit 1
+            fi
           done
-          # 缺任一平台都不能发：缺的那批用户会静默收不到更新
-          missing=""
-          [ -n "$mac_sig" ] || missing="$missing macOS"
-          [ -n "$win_x64_sig" ] || missing="$missing windows-x86_64"
-          [ -n "$win_arm64_sig" ] || missing="$missing windows-aarch64"
-          if [ -n "$missing" ]; then
-            echo "❌ Missing updater signatures for:$missing" >&2
-            exit 1
-          fi
-          # 构造 JSON
-          tmp_json=$(mktemp)
-          {
-            echo '{'
-            echo "  \"version\": \"$VERSION\",";
-            echo "  \"notes\": \"Release $TAG\",";
-            echo "  \"pub_date\": \"$PUB_DATE\",";
-            echo '  "platforms": {'
-            first=1
-            if [ -n "$mac_url" ] && [ -n "$mac_sig" ]; then
-              # 为兼容 arm64 / x64，重复写入两个键，指向同一 universal 包
-              for key in darwin-aarch64 darwin-x86_64; do
-                [ $first -eq 0 ] && echo ','
-                echo "    \"$key\": {\"signature\": \"$mac_sig\", \"url\": \"$mac_url\"}"
-                first=0
-              done
-            fi
-            if [ -n "$win_x64_url" ] && [ -n "$win_x64_sig" ]; then
-              [ $first -eq 0 ] && echo ','
-              echo "    \"windows-x86_64\": {\"signature\": \"$win_x64_sig\", \"url\": \"$win_x64_url\"}"
-              first=0
-            fi
-            if [ -n "$win_arm64_url" ] && [ -n "$win_arm64_sig" ]; then
-              [ $first -eq 0 ] && echo ','
-              echo "    \"windows-aarch64\": {\"signature\": \"$win_arm64_sig\", \"url\": \"$win_arm64_url\"}"
-              first=0
-            fi
-            echo '  }'
-            echo '}'
-          } > "$tmp_json"
-          echo "Generated latest.json:" && cat "$tmp_json"
-          mv "$tmp_json" release-assets/latest.json
+          ls -la release-assets
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v3
         with:
+          token: ${{ github.token }}
           tag_name: ${{ github.ref_name }}
-          name: CC Switch ${{ github.ref_name }}
-          prerelease: true
+          name: BetterCCS ${{ github.ref_name }}
+          prerelease: false
           body: |
-            ## CC Switch ${{ github.ref_name }}
+            ## BetterCCS ${{ github.ref_name }}
 
-            Claude Code 供应商切换工具
+            Claude Code / Codex / Gemini CLI 供应商切换工具。
+
+            ### 更新
+
+            - 品牌改为 BetterCCS，界面保留简体中文与英文。
+            - 更新检查与发行说明使用本仓库，升级从 Releases 下载安装包。
+            - Windows 与 macOS 构建无需配置自定义 secrets。
 
             ### 下载
 
-            - **macOS**: `CC-Switch-${{ github.ref_name }}-macOS.dmg`（推荐）或 `CC-Switch-${{ github.ref_name }}-macOS.zip`（解压即用）
-            - **Windows (x86_64)**: `CC-Switch-${{ github.ref_name }}-Windows.msi`（安装版）或 `CC-Switch-${{ github.ref_name }}-Windows-Portable.zip`（绿色版）
-            - **Windows (ARM64)**: `CC-Switch-${{ github.ref_name }}-Windows-arm64.msi`（安装版）或 `CC-Switch-${{ github.ref_name }}-Windows-arm64-Portable.zip`（绿色版）
+            - **Windows (x86_64)**: `BetterCCS-${{ github.ref_name }}-Windows.msi`（安装版）或 `BetterCCS-${{ github.ref_name }}-Windows-Portable.zip`（绿色版）
+            - **Windows (ARM64)**: `BetterCCS-${{ github.ref_name }}-Windows-arm64.msi`（安装版）或 `BetterCCS-${{ github.ref_name }}-Windows-arm64-Portable.zip`（绿色版）
+            - **macOS (Intel / Apple 芯片通用)**: `BetterCCS-${{ github.ref_name }}-macOS.dmg`（推荐）或 `BetterCCS-${{ github.ref_name }}-macOS.zip`（解压即用）
 
-            > `.tar.gz` 为 Tauri updater 自动更新专用，无需手动下载。
-
-            ---
-            macOS 版本已通过 Apple 代码签名和公证，可直接安装使用。
+            > 安装包未做代码签名：Windows 首次运行可能有 SmartScreen 提示（「更多信息 → 仍要运行」），
+            > macOS 需右键「打开」或在「隐私与安全性」里允许。
           files: release-assets/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_unmatched_files: true

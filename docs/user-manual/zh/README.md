@@ -1,11 +1,11 @@
-# CC Switch 用户手册
+# BetterCCS 用户手册
 
 > Claude Code / Claude Desktop / Codex / Gemini CLI / Grok Build / OpenCode / OpenClaw / Hermes / Pi / MiniMax Code 全方位辅助工具
 
 ## 目录结构
 
 ```
-📚 CC Switch 用户手册
+📚 BetterCCS 用户手册
 │
 ├── 1. 快速入门
 │   ├── 1.1 软件介绍
@@ -92,7 +92,7 @@
 
 | 文件 | 内容 |
 |------|------|
-| [5.1-config-files.md](./5-faq/5.1-config-files.md) | CC Switch 存储、CLI 配置文件格式 |
+| [5.1-config-files.md](./5-faq/5.1-config-files.md) | BetterCCS 存储、CLI 配置文件格式 |
 | [5.2-questions.md](./5-faq/5.2-questions.md) | 常见问题解答 |
 | [5.3-deeplink.md](./5-faq/5.3-deeplink.md) | 深度链接协议、生成和使用方法 |
 | [5.4-env-conflict.md](./5-faq/5.4-env-conflict.md) | 环境变量冲突检测与处理 |
@@ -110,7 +110,7 @@
 
 - 文档版本：v4.0.4
 - 最后更新：2026-10-07
-- 适用于 CC Switch v4.0.4+
+- 适用于 BetterCCS v4.0.4+
 
 ### 近期主要变化（v4.0）
 

@@ -18,20 +18,29 @@ describe("syncLanguageFromSettings", () => {
   });
 
   it("overrides a stale cached language", async () => {
-    await i18n.changeLanguage("ja");
-    localStorage.setItem("language", "ja");
+    await i18n.changeLanguage("en");
+    localStorage.setItem("language", "en");
 
-    syncLanguageFromSettings("zh-TW");
+    syncLanguageFromSettings("zh");
 
-    expect(i18n.language).toBe("zh-TW");
-    expect(localStorage.getItem("language")).toBe("zh-TW");
+    expect(i18n.language).toBe("zh");
+    expect(localStorage.getItem("language")).toBe("zh");
   });
 
-  it("restores Turkish and its translated labels from saved settings", async () => {
+  it("reads languages that no longer exist as the closest one we still ship", async () => {
+    // 旧版上游可选的繁中 / 日文 / 土耳其文：繁中读简中，另两个读英文
     await i18n.changeLanguage("en");
+    syncLanguageFromSettings("zh-TW");
+    expect(i18n.language).toBe("zh");
+    expect(localStorage.getItem("language")).toBe("zh");
+
+    syncLanguageFromSettings("ja");
+    expect(i18n.language).toBe("en");
+    expect(localStorage.getItem("language")).toBe("en");
+
     syncLanguageFromSettings("tr");
-    expect(i18n.language).toBe("tr");
-    expect(localStorage.getItem("language")).toBe("tr");
+    expect(i18n.language).toBe("en");
+    expect(localStorage.getItem("language")).toBe("en");
   });
 
   it("leaves the current language alone when nothing is saved", async () => {

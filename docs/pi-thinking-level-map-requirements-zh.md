@@ -7,7 +7,7 @@
 
 模型能力分为两条互不混用的路径：
 
-- Pi 供应商预设由 CC Switch 维护完整模型配置，选择后可以直接保存。
+- Pi 供应商预设由 BetterCCS 维护完整模型配置，选择后可以直接保存。
 - 自定义供应商从“获取模型列表”选中模型时，按 [Pi 前端设计指南 4.5](./pi-frontend-uiux-guidelines-zh.md) 的规则从同地址预设和 models.dev 补全 `reasoning`、`input`、`contextWindow`、`maxTokens`，并在协议允许时补 `thinkingLevelMap`（规则见第 4 节）。
 
 预设里的思考映射仍只在开发时人工核对后写入。

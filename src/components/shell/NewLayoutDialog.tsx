@@ -15,10 +15,10 @@ import { Button } from "@/components/ui/button";
 import { APP_IDS } from "@/config/appConfig";
 import { providersApi, settingsApi } from "@/lib/api";
 import { useSettingsQuery } from "@/lib/query";
-import { markSeen } from "@/lib/whatsNew";
+import { markSeen, GITHUB_REPO_URL } from "@/lib/whatsNew";
 import type { Settings } from "@/types";
 
-const RELEASES_URL = "https://github.com/farion1231/cc-switch/releases";
+const RELEASES_URL = `${GITHUB_REPO_URL}/releases`;
 
 /** 任一应用的数据库里已经有供应商（找到一家就停） */
 async function hasAnyProvider(): Promise<boolean> {

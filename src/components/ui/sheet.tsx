@@ -115,11 +115,7 @@ const SheetPageContent = React.forwardRef<
         }
         leading={
           <DialogPrimitive.Close asChild>
-            <Button
-              variant="quiet"
-              size="icon-compact"
-              aria-label={closeLabel}
-            >
+            <Button variant="quiet" size="icon-compact" aria-label={closeLabel}>
               <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </DialogPrimitive.Close>

@@ -1,6 +1,6 @@
 //! Codex 供应商身份判定：是不是官方账号、该用哪一档模型目录工具。
 //!
-//! 本地路由下线后，这里不再有协议转换：直连时 CC Switch 只是把供应商行写进
+//! 本地路由下线后，这里不再有协议转换：直连时 BetterCCS 只是把供应商行写进
 //! `~/.codex/config.toml` 和模型目录，请求由 Codex 自己发。
 
 use crate::provider::Provider;

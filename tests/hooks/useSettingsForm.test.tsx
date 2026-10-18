@@ -58,61 +58,42 @@ describe("useSettingsForm Hook", () => {
     expect(changeLanguageSpy).toHaveBeenCalledWith("en");
   });
 
-  it("preserves Turkish from server settings", async () => {
+  it("reads languages we no longer ship as the closest one left", async () => {
+    // 旧版上游存过繁体中文 / 日文 / 土耳其文：繁中归简中，另两个归英文
+    useSettingsQueryMock.mockReturnValue({
+      data: { language: "zh-Hant" },
+      isLoading: false,
+    });
+    const zhTW = renderHook(() => useSettingsForm());
+    await waitFor(() =>
+      expect(zhTW.result.current.settings?.language).toBe("zh"),
+    );
+    expect(zhTW.result.current.initialLanguage).toBe("zh");
+    expect(changeLanguageSpy).toHaveBeenCalledWith("zh");
+
+    changeLanguageSpy.mockClear();
+    useSettingsQueryMock.mockReturnValue({
+      data: { language: "ja" },
+      isLoading: false,
+    });
+    const ja = renderHook(() => useSettingsForm());
+    await waitFor(() =>
+      expect(ja.result.current.settings?.language).toBe("en"),
+    );
+    expect(ja.result.current.initialLanguage).toBe("en");
+    expect(changeLanguageSpy).toHaveBeenCalledWith("en");
+
+    changeLanguageSpy.mockClear();
     useSettingsQueryMock.mockReturnValue({
       data: { language: "tr" },
       isLoading: false,
     });
-    const { result } = renderHook(() => useSettingsForm());
-    await waitFor(() => expect(result.current.settings?.language).toBe("tr"));
-    expect(result.current.initialLanguage).toBe("tr");
-    expect(changeLanguageSpy).toHaveBeenCalledWith("tr");
-  });
-
-  it("should support japanese language preference from server data", async () => {
-    useSettingsQueryMock.mockReturnValue({
-      data: {
-        showInTray: true,
-        minimizeToTrayOnClose: true,
-        enableClaudePluginIntegration: false,
-        claudeConfigDir: "/Users/demo",
-        codexConfigDir: null,
-        language: "ja",
-      },
-      isLoading: false,
-    });
-
-    const { result } = renderHook(() => useSettingsForm());
-
-    await waitFor(() => {
-      expect(result.current.settings?.language).toBe("ja");
-    });
-
-    expect(result.current.initialLanguage).toBe("ja");
-    expect(changeLanguageSpy).toHaveBeenCalledWith("ja");
-  });
-
-  it("should support traditional chinese language preference aliases", async () => {
-    useSettingsQueryMock.mockReturnValue({
-      data: {
-        showInTray: true,
-        minimizeToTrayOnClose: true,
-        enableClaudePluginIntegration: false,
-        claudeConfigDir: "/Users/demo",
-        codexConfigDir: null,
-        language: "zh-Hant",
-      },
-      isLoading: false,
-    });
-
-    const { result } = renderHook(() => useSettingsForm());
-
-    await waitFor(() => {
-      expect(result.current.settings?.language).toBe("zh-TW");
-    });
-
-    expect(result.current.initialLanguage).toBe("zh-TW");
-    expect(changeLanguageSpy).toHaveBeenCalledWith("zh-TW");
+    const tr = renderHook(() => useSettingsForm());
+    await waitFor(() =>
+      expect(tr.result.current.settings?.language).toBe("en"),
+    );
+    expect(tr.result.current.initialLanguage).toBe("en");
+    expect(changeLanguageSpy).toHaveBeenCalledWith("en");
   });
 
   it("should prioritize reading language from local storage in readPersistedLanguage", () => {

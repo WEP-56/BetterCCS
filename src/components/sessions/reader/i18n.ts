@@ -5,7 +5,7 @@ import type { Translate } from "./toolSummary";
 /**
  * 阅读页文案（`sessionManager.reader.*`）。
  * 这里的简体中文是各 key 的 defaultValue：语言包缺 key（含单测）时仍有可读文案。
- * 四套语言包里的取值以 src/i18n/locales/*.json 为准。
+ * 语言包里的取值以 src/i18n/locales/*.json 为准。
  */
 export const READER_I18N_PREFIX = "sessionManager.reader.";
 

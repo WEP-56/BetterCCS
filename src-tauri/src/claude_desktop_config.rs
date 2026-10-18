@@ -18,7 +18,7 @@ use crate::mode::state::{self, PendingTarget};
 use crate::provider::{ClaudeDesktopMode, Provider};
 
 pub const PROFILE_ID: &str = "00000000-0000-4000-8000-000000157210";
-pub const PROFILE_NAME: &str = "CC Switch";
+pub const PROFILE_NAME: &str = "BetterCCS";
 
 #[cfg(any(target_os = "macos", windows, target_os = "linux", test))]
 const CONFIG_FILE: &str = "claude_desktop_config.json";
@@ -135,7 +135,7 @@ pub fn apply_provider(db: &Database, provider: &Provider) -> Result<(), AppError
 
 /// 写进 Desktop 配置的内容。
 pub enum DesktopTarget<'a> {
-    /// 官方：两个配置文件改回 `1p`，摘掉 CC Switch 的 profile。
+    /// 官方：两个配置文件改回 `1p`，摘掉 BetterCCS 的 profile。
     Official,
     /// 第三方网关 profile（直连那家的，或指向本地路由的）。
     Profile(&'a Value),
@@ -818,7 +818,7 @@ fn write_profile_at_paths(
 }
 
 /// 切回官方：两个配置文件改回 `1p`，清掉旧版写进 `enterpriseConfig` 的网关设置，
-/// 把 CC Switch 的 profile 从 `_meta.json` 里摘掉。
+/// 把 BetterCCS 的 profile 从 `_meta.json` 里摘掉。
 ///
 /// profile 文件本身保留、只清关键字段：用户在 Desktop 里对这个 profile 改的设置
 /// （#4774 的 auto 模式）下次切回第三方时还在，Key 也从磁盘上清掉了。Desktop 只按
@@ -943,7 +943,7 @@ fn gateway_profile_patch(profile: Value) -> JsonPatch {
     patch
 }
 
-/// `configLibrary/_meta.json`：`entries` 里登记 CC Switch 的 profile，`appliedId`
+/// `configLibrary/_meta.json`：`entries` 里登记 BetterCCS 的 profile，`appliedId`
 /// 指向当前生效的那个。已有条目原位更新，不挪位置。
 struct MetaPatch {
     applied: bool,
@@ -1098,7 +1098,7 @@ fn current_platform_paths() -> Result<ClaudeDesktopPaths, AppError> {
 /// not expose a directory override or attempt to recover a host-custom
 /// XDG_CONFIG_HOME: Flatpak replaces that variable with its private path, so
 /// its original host value is not available reliably from the sandbox. Users
-/// with a custom host XDG_CONFIG_HOME should run the native CC Switch package.
+/// with a custom host XDG_CONFIG_HOME should run the native BetterCCS package.
 #[cfg(target_os = "linux")]
 fn linux_config_dir() -> PathBuf {
     let xdg_config_home = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from);
@@ -1541,7 +1541,7 @@ mod tests {
             .any(|entry| entry["id"] == json!(PROFILE_ID)));
     }
 
-    /// #4774：用户在 Desktop 里给 CC Switch 的 profile 打开的设置，切换供应商、
+    /// #4774：用户在 Desktop 里给 BetterCCS 的 profile 打开的设置，切换供应商、
     /// 切回官方再切回来都不能丢；用户收紧过的出站白名单也不能被改回 `*`。
     #[test]
     fn claude_desktop_switches_keep_the_users_own_profile_settings() {

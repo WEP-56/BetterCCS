@@ -98,7 +98,6 @@ export function isOfficialAccount(
   );
 }
 
-
 /**
  * 这家供应商的格式，Agent 客户端直连能不能用。
  *

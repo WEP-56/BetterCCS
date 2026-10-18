@@ -9,9 +9,7 @@ interface UsagePageProps {
 }
 
 /** 侧栏「用量统计」全局页（v7 S6）：不开路由也有数据（读会话日志）。 */
-export function UsagePage({
-  initialAppType,
-}: UsagePageProps = {}) {
+export function UsagePage({ initialAppType }: UsagePageProps = {}) {
   const { settings, autoSaveSettings } = useSettings();
 
   const save = async (updates: Partial<SettingsFormState>) => {

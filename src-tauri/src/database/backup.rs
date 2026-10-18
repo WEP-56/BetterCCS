@@ -14,7 +14,9 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 use tempfile::{Builder, NamedTempFile};
 
-const CC_SWITCH_SQL_EXPORT_HEADER: &str = "-- CC Switch SQLite 导出";
+/// SQL 备份文件的格式标记：与上游 cc-switch 完全一致，导入导出两边都能互认，
+/// 所以这里保留上游写法，不跟着产品名改。
+const CC_SWITCH_SQL_EXPORT_HEADER: &str = "-- BetterCCS SQLite 导出";
 
 /// Bound combined INSERT batches while still amortizing statement parsing.
 /// A row larger than this cap is emitted alone because it cannot be split.
@@ -288,8 +290,8 @@ impl Database {
 
         Err(AppError::localized(
             "backup.sql.invalid_format",
-            "仅支持导入由 CC Switch 导出的 SQL 备份文件。",
-            "Only SQL backups exported by CC Switch are supported.",
+            "仅支持导入由 BetterCCS 导出的 SQL 备份文件。",
+            "Only SQL backups exported by BetterCCS are supported.",
         ))
     }
 
@@ -671,7 +673,7 @@ impl Database {
         ))
     }
 
-    /// Validate that the external SQL created a recognizable CC Switch schema.
+    /// Validate that the external SQL created a recognizable BetterCCS schema.
     ///
     /// These tables all existed in the oldest supported SQL-export schema
     /// (v3.8.x). Checking before migrations keeps header-only/truncated files
@@ -698,8 +700,8 @@ impl Database {
             let names = missing.join(", ");
             return Err(AppError::localized(
                 "backup.sql.invalid_schema",
-                format!("导入的 SQL 缺少 CC Switch 必需表：{names}"),
-                format!("The imported SQL is missing required CC Switch tables: {names}"),
+                format!("导入的 SQL 缺少 BetterCCS 必需表：{names}"),
+                format!("The imported SQL is missing required BetterCCS tables: {names}"),
             ));
         }
         Ok(())
@@ -714,7 +716,7 @@ impl Database {
             .unwrap_or(0);
 
         output.push_str(&format!(
-            "-- CC Switch SQLite 导出\n-- 生成时间: {timestamp}\n-- user_version: {user_version}\n"
+            "-- BetterCCS SQLite 导出\n-- 生成时间: {timestamp}\n-- user_version: {user_version}\n"
         ));
         output.push_str("PRAGMA foreign_keys=OFF;\n");
         output.push_str(&format!("PRAGMA user_version={user_version};\n"));
@@ -1457,8 +1459,8 @@ mod tests {
             .import_sql_string(&header_only)
             .expect_err("缺少原始 schema 的文件必须被拒绝");
         assert!(
-            error.to_string().contains("required CC Switch tables")
-                || error.to_string().contains("CC Switch 必需表"),
+            error.to_string().contains("required BetterCCS tables")
+                || error.to_string().contains("BetterCCS 必需表"),
             "应由原始 schema 校验拒绝，实际错误: {error}"
         );
 
@@ -1603,7 +1605,7 @@ mod tests {
         let exported = source.export_sql_string()?;
         let truncated = exported
             .strip_suffix("COMMIT;\nPRAGMA foreign_keys=ON;\n")
-            .expect("CC Switch export should end with a committed transaction");
+            .expect("BetterCCS export should end with a committed transaction");
 
         let target = Database::memory()?;
         {

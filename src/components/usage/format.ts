@@ -23,7 +23,7 @@ export function fmtInt(
 }
 
 /** 用量金额的显示币种。库里一律存美元，只在显示时按 `rate`（1 美元折多少）换算。 */
-/** 界面语言各自的币种（en→USD、zh→CNY、ja→JPY、zh-TW→TWD、tr→TRY），外加欧元 */
+/** 界面语言各自的币种（en→USD、zh→CNY），外加欧元等其它常用币种 */
 export const DISPLAY_CURRENCIES = [
   "USD",
   "CNY",
@@ -370,25 +370,10 @@ function normalizeLanguageTag(language: string): string {
   return language.toLowerCase().replace(/_/g, "-");
 }
 
-function isTraditionalChineseLanguage(normalizedLanguage: string): boolean {
-  return (
-    normalizedLanguage === "zh-tw" ||
-    normalizedLanguage.startsWith("zh-hant") ||
-    normalizedLanguage.startsWith("zh-hk") ||
-    normalizedLanguage.startsWith("zh-mo")
-  );
-}
-
 export function getLocaleFromLanguage(language: string): string {
   if (!language) return "en-US";
   const normalized = normalizeLanguageTag(language);
-  if (normalized === "zh") return "zh-CN";
-  if (isTraditionalChineseLanguage(normalized)) {
-    return "zh-TW";
-  }
   if (normalized.startsWith("zh")) return "zh-CN";
-  if (normalized.startsWith("ja")) return "ja-JP";
-  if (normalized.startsWith("tr")) return "tr-TR";
   return "en-US";
 }
 
@@ -403,15 +388,15 @@ export function getResolvedLang(i18n: I18nLike): string {
 
 function isCjkLanguage(lang: string): boolean {
   const normalized = normalizeLanguageTag(lang);
-  return normalized.startsWith("zh") || normalized.startsWith("ja");
+  return normalized.startsWith("zh");
 }
 
-/** 并列的名字：中日文用「、」，其他语言用逗号。 */
+/** 并列的名字：中文用「、」，其他语言用逗号。 */
 export function joinNames(items: readonly string[], lang: string): string {
   return items.join(isCjkLanguage(lang) ? "、" : ", ");
 }
 
-/** 并列的分句：中日文用「；」，其他语言用分号。 */
+/** 并列的分句：中文用「；」，其他语言用分号。 */
 export function joinClauses(items: readonly string[], lang: string): string {
   return items.join(isCjkLanguage(lang) ? "；" : "; ");
 }
@@ -431,12 +416,7 @@ export function formatTokensShort(
   if (!Number.isFinite(value) || value <= 0) return "0";
   const decimals = compactDecimals;
   const normalizedLang = normalizeLanguageTag(lang);
-  if (isTraditionalChineseLanguage(normalizedLang)) {
-    if (value >= 1e8) return `${(value / 1e8).toFixed(2)} 億`;
-    if (value >= 1e4) return `${(value / 1e4).toFixed(decimals)} 萬`;
-    return value.toLocaleString("zh-TW");
-  }
-  if (normalizedLang.startsWith("zh") || normalizedLang.startsWith("ja")) {
+  if (normalizedLang.startsWith("zh")) {
     if (value >= 1e8) return `${(value / 1e8).toFixed(2)} 亿`;
     if (value >= 1e4) return `${(value / 1e4).toFixed(decimals)} 万`;
     return value.toLocaleString();

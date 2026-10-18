@@ -8,7 +8,7 @@ import { compareVersions } from "@/lib/version";
 export const WHATS_NEW_ITEM_TYPES = ["new", "fix", "improve"] as const;
 export type WhatsNewItemType = (typeof WHATS_NEW_ITEM_TYPES)[number];
 
-export const WHATS_NEW_LANGUAGES = ["zh", "zh-TW", "en", "ja"] as const;
+export const WHATS_NEW_LANGUAGES = ["zh", "en"] as const;
 export type WhatsNewLanguage = (typeof WHATS_NEW_LANGUAGES)[number];
 
 export type WhatsNewItem = { type: WhatsNewItemType } & Record<
@@ -83,17 +83,15 @@ export function markSeen(
 }
 
 export function resolveWhatsNewLanguage(language: string): WhatsNewLanguage {
-  return (WHATS_NEW_LANGUAGES as readonly string[]).includes(language)
-    ? (language as WhatsNewLanguage)
-    : "en";
+  // 界面只有简中与英文；繁中一类的旧设置读简中，其余读英文
+  return language.toLowerCase().startsWith("zh") ? "zh" : "en";
 }
 
-/** 官网更新日志：不带版本是列表页。官网只有 zh / en / ja，繁中用简中页面 */
-export function changelogUrl(
-  language: WhatsNewLanguage,
-  version?: string,
-): string {
-  const siteLanguage = language === "zh-TW" ? "zh" : language;
-  const base = `https://ccswitch.io/${siteLanguage}/changelog`;
-  return version ? `${base}/${version}` : base;
+/** fork 仓库与它的 Releases：更新检查、发布说明、GitHub 按钮都指向这里。 */
+export const GITHUB_REPO_URL = "https://github.com/WEP-56/BetterCCS";
+export const RELEASES_URL = `${GITHUB_REPO_URL}/releases`;
+
+export function releaseNotesUrl(version?: string): string {
+  const trimmed = version?.trim().replace(/^v/, "");
+  return trimmed ? `${RELEASES_URL}/tag/v${trimmed}` : RELEASES_URL;
 }

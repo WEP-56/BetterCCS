@@ -66,8 +66,22 @@ pnpm test:unit      # 单元测试
 pnpm tauri build    # 打包
 ```
 
+## 发布
+
+GitHub Actions 只构建 Windows x64 / ARM64 和 macOS Universal，无需配置任何自定义 secrets。
+发布前同步 `package.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` 与 `src-tauri/tauri.conf.json` 的版本号，
+并添加 `src/whats-new/<版本>.json`。推送 `v<版本>` 标签后自动构建并发布 GitHub Release；
+手动运行 Release workflow 只构建和保存产物，不发布。
+
+Windows 提供 MSI 与便携版 ZIP，macOS 提供 DMG 与 ZIP。安装包不做证书签名或公证，
+macOS 使用 ad-hoc 签名；升级从本仓库 Releases 下载并安装，不生成自动更新签名包。
+
 ## 致谢与许可
 
 上游项目：[farion1231/cc-switch](https://github.com/farion1231/cc-switch)，MIT License。
 
 本仓库同样以 MIT License 发布，见 [LICENSE](LICENSE)。
+
+## Linuxdo
+
+https://linux.do/

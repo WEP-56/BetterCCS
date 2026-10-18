@@ -486,7 +486,7 @@ export function AddProviderDialog({
     <ProviderForm
       appId={appId}
       submitLabel={t("common.add")}
-          onSubmit={handleSubmit}
+      onSubmit={handleSubmit}
       onCancel={closeDialog}
       onSubmittingChange={setIsFormSubmitting}
       onSubmitReadyChange={handleSubmitReadyChange}

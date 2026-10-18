@@ -1,20 +1,9 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/lib/toast";
 import { invoke } from "@tauri-apps/api/core";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  ExternalLink,
-  MoreHorizontal,
-  Plus,
-  Search,
-} from "lucide-react";
+import { ExternalLink, MoreHorizontal, Plus, Search } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Provider, VisibleApps } from "@/types";
 import { KNOWN_APP_TYPES, type AppTypeFilter } from "@/types/usage";
@@ -637,7 +626,7 @@ function App() {
 
   // 侧栏、⌘K 进用量统计看全部应用；只有应用页 ⋯ 进来时带应用筛选
   const openPageFromNav = (page: GlobalPage | "settings") => {
-    // 「设置」上的绿点说的是 CC Switch 有新版本，点进去直接到「关于」里的更新按钮
+    // 「设置」上的绿点说的是 BetterCCS 有新版本，点进去直接到「关于」里的更新按钮
     if (page === "settings" && hasUpdate) {
       openSettings("about");
       return;
@@ -1311,9 +1300,7 @@ function App() {
   const renderGlobalPage = () => {
     switch (currentView) {
       case "usage":
-        return (
-          <UsagePage initialAppType={usageAppFilter} />
-        );
+        return <UsagePage initialAppType={usageAppFilter} />;
       case "mcp":
         return (
           <UnifiedMcpPanel onInteractionBlockedChange={setMcpManagementBusy} />
@@ -1493,7 +1480,7 @@ function App() {
             : t("confirm.deleteProvider")
         }
         message={confirmActionMessage}
-        // 「移除」只是从应用配置里拿掉、CC Switch 里还留着，可以再加回去，不用红色
+        // 「移除」只是从应用配置里拿掉、BetterCCS 里还留着，可以再加回去，不用红色
         variant={confirmAction?.action === "remove" ? "info" : "destructive"}
         onConfirm={() => void handleConfirmAction()}
         onCancel={() => setConfirmAction(null)}

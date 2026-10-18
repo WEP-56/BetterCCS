@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import tr from "@/i18n/locales/tr.json";
 import en from "@/i18n/locales/en.json";
-import ja from "@/i18n/locales/ja.json";
-import zhTW from "@/i18n/locales/zh-TW.json";
 import zh from "@/i18n/locales/zh.json";
 
 type TranslationTree = Record<string, unknown>;
@@ -49,8 +46,7 @@ const piProductReferences = new Map(
 );
 const locales = [
   ["zh", zh],
-  ["ja", ja],
-  ["zh-TW", zhTW],
+  ["en", en],
 ] as const;
 
 describe("locale coverage", () => {
@@ -94,21 +90,20 @@ describe("locale coverage", () => {
   );
 });
 
-// Turkish is a community translation: keys it does not have yet fall back to
-// English, so new English strings must never fail CI here. These checks only
-// look at strings that already exist in tr.json.
-describe("Turkish locale", () => {
-  it("keeps every existing translation non-empty", () => {
+// 界面只有简中与英文两档：`en` 是参考基准，简中缺键会退回英文，所以这里检查
+// 简中的每一句都不为空、插值变量一致。
+describe("Simplified Chinese locale", () => {
+  it("keeps every translation non-empty", () => {
     expect(
-      [...flattenStrings(tr)].filter(
+      [...flattenStrings(zh)].filter(
         ([key, value]) => reference.get(key)?.trim() && !value.trim(),
       ),
     ).toEqual([]);
   });
 
-  it("preserves interpolation variables in existing translations", () => {
+  it("preserves interpolation variables in every translation", () => {
     expect(
-      [...flattenStrings(tr)]
+      [...flattenStrings(zh)]
         .filter(([key, value]) => {
           const expected = reference.get(key);
           return (
@@ -122,7 +117,7 @@ describe("Turkish locale", () => {
   });
 
   it("preserves protocol fields, configuration literals, and commands", () => {
-    const translations = flattenStrings(tr);
+    const translations = flattenStrings(zh);
     const exactLiterals = [
       "opencode.extraOptionKeyPlaceholder",
       "opencode.modelExtraFieldKeyPlaceholder",
