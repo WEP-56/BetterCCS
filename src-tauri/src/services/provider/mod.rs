@@ -59,9 +59,6 @@ use live::{
 };
 use usage::validate_usage_script;
 
-/// Codex official providers are safe to select during takeover: Codex keeps
-/// ownership of the active ChatGPT login and the proxy only forwards the
-/// authenticated request. Other apps' official providers retain the block.
 /// Claude Desktop 直连模式下用不了要经路由的卡。
 fn desktop_needs_routing_error() -> AppError {
     AppError::localized(
@@ -69,11 +66,6 @@ fn desktop_needs_routing_error() -> AppError {
         "这个供应商要经本地路由才能用（模型映射或托管账号），请先把 Claude Desktop 切到路由模式",
         "This provider only works through local routing (model mapping or a managed account); switch Claude Desktop to the routing mode first",
     )
-}
-
-pub fn official_provider_supports_proxy_takeover(app_type: &AppType, provider: &Provider) -> bool {
-    matches!(app_type, AppType::Codex)
-        && crate::upstream::providers::is_codex_official_provider(provider)
 }
 
 /// 统一会话开关变更后，立即按新开关状态重写当前官方 Codex 供应商的选路（关键字段），

@@ -301,13 +301,6 @@ pub(crate) fn has_pending(app: &str) -> bool {
         .is_some()
 }
 
-/// 这个应用上一次操作留下的 pending 是否已经开始发布：`Some(true)` 表示下次操作或启动时
-/// 会前滚补完，`Some(false)` 表示会被丢弃，`None` 表示没有 pending。操作返回错误后用来
-/// 判断是「什么都没改」还是「已部分写入、待补完」。
-pub(crate) fn pending_published(store: &DeviceStore, app: &str) -> Result<Option<bool>, AppError> {
-    Ok(state::pending(store, app)?.map(|pending| pending.published))
-}
-
 /// 读指针、模式或「live 现在归谁」之前调用：先补完这个应用上一次没做完的操作，读到的
 /// 才是落定过的状态。调用方不能持有这个应用的写锁（不可重入）；要拿代理切换锁时先拿它。
 pub fn settle(db: &Database, app: &str) -> Result<Option<RecoveryOutcome>, AppError> {

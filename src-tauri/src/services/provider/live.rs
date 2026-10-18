@@ -752,20 +752,14 @@ pub(crate) fn sync_additive_app_to_live(
 pub(crate) enum LiveSyncOutcome {
     /// 按直连投影写了 live。
     WroteLive,
-    /// 应用在代理模式：live 是代理契约，没有按直连写。
-    ProxyMode,
 }
 
-/// 把 `provider` 同步到 live，按应用的模式处理：
-/// - 直连模式：按直连投影写 live；
-/// - 代理模式：live 是代理契约。`provider` 是代理路由的那家、或在 Stack 名单里时按新契约
-///   重写（契约没变就不动）；其余供应商（包括直连指针那家）只在退出代理时写回，这里不碰
-///   live。
+/// 把 `provider` 按直连投影同步到 live。
 ///
 /// `prev` 是 live 现在对应的那一版供应商行（编辑前的行），Claude 按它删上一版带进来的
-/// 独有字段；`None` 表示 live 对应的就是 `provider` 自己。调用方持有这个应用的代理切换锁
-/// （`controller::lock_settled_blocking`），并且在拿锁之后才读谁是当前供应商：不拿锁的
-/// 话，读完模式到写完 live 之间进入代理，直连的关键字段会盖掉刚写的代理契约。
+/// 独有字段；`None` 表示 live 对应的就是 `provider` 自己。调用方持有这个应用的切换锁，
+/// 并且在拿锁之后才读谁是当前供应商：不拿锁的话，读完指针到写完 live 之间换了供应商，
+/// 就会把新的那家的关键字段盖掉。
 pub(crate) fn sync_live_for_provider_respecting_mode(
     state: &AppState,
     app_type: &AppType,
@@ -783,7 +777,7 @@ pub(crate) fn sync_live_for_provider_respecting_mode(
     Ok(LiveSyncOutcome::WroteLive)
 }
 
-/// 把正在用的那家（代理模式下是代理路由）同步到 live；没有正在用的那家时返回 `None`。
+/// 把正在用的那家同步到 live；没有正在用的那家时返回 `None`。
 /// 返回时已经放开切换锁。
 pub(crate) fn sync_current_provider_for_app_respecting_mode(
     state: &AppState,

@@ -19,32 +19,9 @@ static DIRECT_CLIENT: OnceCell<Client> = OnceCell::new();
 /// 当前代理 URL（用于日志和状态查询）
 static CURRENT_PROXY_URL: OnceCell<RwLock<Option<String>>> = OnceCell::new();
 
-/// CC Switch 代理服务器当前监听的端口
-static CC_SWITCH_PROXY_PORT: OnceCell<RwLock<u16>> = OnceCell::new();
-
-/// 设置 CC Switch 代理服务器的监听端口
-///
-/// 应在代理服务器启动时调用，以便系统代理检测能正确识别自己的端口
-pub fn set_proxy_port(port: u16) {
-    if let Some(lock) = CC_SWITCH_PROXY_PORT.get() {
-        if let Ok(mut current_port) = lock.write() {
-            *current_port = port;
-            log::debug!("[GlobalProxy] Updated CC Switch proxy port to {port}");
-        }
-    } else {
-        let _ = CC_SWITCH_PROXY_PORT.set(RwLock::new(port));
-        log::debug!("[GlobalProxy] Initialized CC Switch proxy port to {port}");
-    }
-}
-
-/// 获取 CC Switch 代理服务器的监听端口
-fn get_proxy_port() -> u16 {
-    CC_SWITCH_PROXY_PORT
-        .get()
-        .and_then(|lock| lock.read().ok())
-        .map(|port| *port)
-        .unwrap_or(15721) // 默认端口作为回退
-}
+/// 本地路由服务当年固定监听的端口。服务已经下线，但用户的环境变量里可能还留着指向它的
+/// 代理设置：那种情况下要跳过，不能把请求发给一个不存在的端口。
+const LEGACY_PROXY_PORT: u16 = 15721;
 
 /// 初始化全局 HTTP 客户端
 ///
@@ -212,19 +189,6 @@ pub fn get_for_url(url: &str) -> Client {
     }
 }
 
-/// 发往 `url` 时应使用的上游代理：本机地址返回 None（直连），其余返回当前全局代理
-pub fn proxy_url_for(url: &str) -> Option<String> {
-    upstream_proxy_for(url, get_current_proxy_url())
-}
-
-fn upstream_proxy_for(url: &str, current: Option<String>) -> Option<String> {
-    if is_loopback_url(url) {
-        None
-    } else {
-        current
-    }
-}
-
 fn direct_client() -> Client {
     DIRECT_CLIENT
         .get_or_init(|| {
@@ -356,8 +320,7 @@ fn proxy_points_to_loopback(value: &str) -> bool {
     // 检查是否指向 CC Switch 自己的代理端口
     // 只有指向自己的代理才需要跳过，避免递归
     fn is_cc_switch_proxy_port(port: Option<u16>) -> bool {
-        let cc_switch_port = get_proxy_port();
-        port == Some(cc_switch_port)
+        port == Some(LEGACY_PROXY_PORT)
     }
 
     if let Ok(parsed) = url::Url::parse(value) {
@@ -473,27 +436,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_upstream_proxy_for_skips_loopback() {
-        let current = Some("http://127.0.0.1:7890".to_string());
-        assert_eq!(
-            upstream_proxy_for("http://localhost:11434/v1/messages", current.clone()),
-            None
-        );
-        assert_eq!(
-            upstream_proxy_for("http://127.0.0.1:1234/v1/chat/completions", current.clone()),
-            None
-        );
-        assert_eq!(
-            upstream_proxy_for("https://api.example.com/v1/messages", current.clone()),
-            current
-        );
-        assert_eq!(
-            upstream_proxy_for("https://api.example.com/v1/messages", None),
-            None
-        );
-    }
-
     /// 起一个只回 200 的一次性本机 HTTP 服务，返回它的地址
     fn spawn_ok_server() -> String {
         use std::io::{Read, Write};
@@ -563,9 +505,6 @@ mod tests {
     #[test]
     #[serial_test::serial]
     fn test_proxy_points_to_loopback() {
-        // 设置 CC Switch 代理端口为 15721（默认值）
-        set_proxy_port(15721);
-
         // 只有指向 CC Switch 自己端口的 loopback 地址才返回 true
         assert!(proxy_points_to_loopback("http://127.0.0.1:15721"));
         assert!(proxy_points_to_loopback("socks5://localhost:15721"));
@@ -584,9 +523,6 @@ mod tests {
     #[serial_test::serial]
     fn test_system_proxy_points_to_loopback() {
         let _guard = env_lock().lock().unwrap();
-
-        // 设置 CC Switch 代理端口
-        set_proxy_port(15721);
 
         let keys = [
             "HTTP_PROXY",

@@ -572,29 +572,6 @@ pub fn codex_auth_matches_recorded_managed_oauth(
         })
 }
 
-/// Verify that a proxied Codex request still uses the exact live access token
-/// owned by the selected local account. Workspace IDs alone are not sufficient:
-/// different Team users can share one value.
-pub(crate) fn codex_live_auth_matches_managed_request(
-    account_id: &str,
-    request_access_token: &str,
-) -> Result<bool, AppError> {
-    let auth_path = get_codex_auth_path();
-    if !auth_path.exists() {
-        return Ok(false);
-    }
-    let auth: Value = read_json_file(&auth_path)?;
-    if !codex_auth_matches_recorded_managed_oauth(&auth, account_id)? {
-        return Ok(false);
-    }
-    let live_access_token = auth
-        .pointer("/tokens/access_token")
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|token| !token.is_empty());
-    Ok(live_access_token == Some(request_access_token.trim()))
-}
-
 pub(crate) fn clear_codex_managed_oauth_live_auth_marker_for_account(
     account_id: &str,
 ) -> Result<(), AppError> {
@@ -2440,31 +2417,6 @@ pub(crate) fn plan_codex_model_catalog(
     })
 }
 
-/// 一家第三方供应商发布的模型：行里的模型目录；没有配置目录时只有行的 `model`。
-fn codex_published_specs(settings: &Value, config_text: &str) -> Vec<CodexCatalogModelSpec> {
-    let specs = codex_catalog_model_specs(settings);
-    if !specs.is_empty() {
-        return specs;
-    }
-    codex_top_level_model(config_text)
-        .map(|model| {
-            vec![CodexCatalogModelSpec {
-                model,
-                ..CodexCatalogModelSpec::default()
-            }]
-        })
-        .unwrap_or_default()
-}
-
-/// 一家第三方供应商的目录行。
-pub(crate) struct CodexCatalogRow<'a> {
-    pub settings: &'a Value,
-    /// 这一家归一化后的配置（`CodexProjection::catalog_input_text`）：地址、模型名、窗口。
-    pub config_text: &'a str,
-    /// 这一家自己的工具 profile：各家的请求走各自的转换，目录要和转换对得上。
-    pub profile: CodexCatalogToolProfile,
-}
-
 /// Reverse of `plan_codex_model_catalog`: read the
 /// cc-switch–maintained catalog file referenced by `~/.codex/config.toml` and
 /// convert it back into the simplified shape the frontend table uses:
@@ -2528,11 +2480,6 @@ pub(crate) fn read_limited_string(path: &Path, max_bytes: u64) -> Result<String,
         )));
     }
     fs::read_to_string(path).map_err(|error| AppError::io(path, error))
-}
-
-/// Read the cc-switch Codex model catalog file with a size cap.
-pub(crate) fn read_codex_model_catalog_text(path: &Path) -> Result<String, AppError> {
-    read_limited_string(path, MAX_CODEX_CATALOG_BYTES)
 }
 
 /// Given `config.toml` text, resolve the on-disk path of the cc-switch–owned
@@ -3217,14 +3164,6 @@ base_url = "https://single.example.com/v1"
             .expect("record managed auth marker");
         crate::config::write_json_file(&get_codex_auth_path(), &full_bundle)
             .expect("write managed live auth");
-        assert!(
-            codex_live_auth_matches_managed_request("local-account-a", "access").unwrap(),
-            "the selected account's exact live bearer must match"
-        );
-        assert!(
-            !codex_live_auth_matches_managed_request("local-account-a", "other-access").unwrap(),
-            "another user's bearer in the same workspace must not match"
-        );
         let managed_id_token = full_bundle
             .pointer("/tokens/id_token")
             .and_then(Value::as_str)
@@ -3314,7 +3253,6 @@ base_url = "https://single.example.com/v1"
 
         assert!(!marker.exists());
         assert!(!codex_auth_matches_recorded_managed_oauth(&auth, "local-account-a").unwrap());
-        assert!(!codex_live_auth_matches_managed_request("local-account-a", "access").unwrap());
 
         crate::config::write_text_file(&marker, "{not json").expect("write malformed marker");
         assert!(!codex_auth_matches_recorded_managed_oauth(&auth, "local-account-a").unwrap());

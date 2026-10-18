@@ -1127,13 +1127,6 @@ pub fn get_proxy_client_host() -> Option<String> {
         .filter(|host| !host.is_empty())
 }
 
-pub fn set_proxy_client_host(host: &str) -> Result<(), AppError> {
-    let host = host.trim();
-    mutate_settings(|settings| {
-        settings.proxy_client_host = (!host.is_empty()).then(|| host.to_string());
-    })
-}
-
 /// 从文件重新加载设置到内存缓存
 /// 用于导入配置等场景，确保内存缓存与文件同步
 pub fn reload_settings() -> Result<(), AppError> {

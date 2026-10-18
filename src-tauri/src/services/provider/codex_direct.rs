@@ -15,12 +15,9 @@
 //!    盘上有没有登录定下路由表的 `requires_openai_auth`，一起提交。
 
 use serde_json::{Map, Value};
-use toml_edit::{Item, Table, Value as TomlValue};
+use toml_edit::{Item, Value as TomlValue};
 
 use crate::app_config::AppType;
-use crate::codex_config::{
-    CodexCatalogRow,
-};
 use crate::codex_config::{
     codex_auth_has_credential_login_material, codex_config_auth_store_mode,
     codex_disables_web_search, codex_live_auth_is_managed_chatgpt_login,
@@ -32,11 +29,10 @@ use crate::config::sorted_json_bytes;
 use crate::database::Database;
 use crate::error::AppError;
 use crate::live::engine::{digest, read_current, DeviceStore, LiveFile};
-use crate::live::patch::toml::{value_text, TomlDocPatch, TomlSteps};
+use crate::live::patch::toml::{TomlDocPatch, TomlSteps};
 use crate::live::patch::{Guarded, LivePatch, WholeFile};
 use crate::live::project::codex::{
-    official_mirror_table, proxy_route_table, requires_openai_auth, row_catalog_pointer,
-    without_row_catalog, CodexConfigPatch, CodexProjection, KnownTable, Route, RouteAuth,
+    requires_openai_auth, CodexConfigPatch, CodexProjection, KnownTable, Route, RouteAuth,
     RouteWrite, RowInput, ROUTE_ID, WEB_SEARCH_DISABLED,
 };
 use crate::mode::operation::{AppWrite, FileChange, OperationReport};
@@ -46,7 +42,7 @@ use crate::upstream::providers::codex_oauth_auth::CodexLiveAuthSwitchGuard;
 use crate::upstream::providers::codex_oauth_auth::CodexOAuthManager;
 use std::sync::Arc;
 
-use super::codex_login::{self, AuthInput, AuthPlan, AuthTarget, LoginStash, STASH_FILENAME};
+use super::codex_login::{self, AuthInput, AuthTarget, LoginStash, STASH_FILENAME};
 use super::ProviderService;
 
 fn app() -> &'static str {
@@ -182,16 +178,6 @@ pub(crate) fn prepare(
         outgoing,
         ..Prepared::default()
     })
-}
-
-
-/// 放到阻塞线程池里做，不占异步运行时的工作线程。
-pub(crate) async fn off_runtime<T: Send + 'static>(
-    work: impl FnOnce() -> T + Send + 'static,
-) -> Result<T, AppError> {
-    tauri::async_runtime::spawn_blocking(work)
-        .await
-        .map_err(|error| AppError::Message(format!("后台线程异常退出: {error}")))
 }
 
 
@@ -411,7 +397,7 @@ pub(crate) fn plan(
     let provider = target_provider(target);
     let projection = provider.map(project).transpose()?;
 
-    let (top, mut nested, mut exclusive) = match (&projection, provider) {
+    let (top, nested, exclusive) = match (&projection, provider) {
         (Some(projection), Some(provider)) => (
             projection.top.clone(),
             projection.nested.clone(),
@@ -495,45 +481,6 @@ pub(crate) fn plan(
     })
 }
 
-
-/// 路由那家的行指定了自己管理的模型目录文件（`model_catalog_json`）：Codex 只读那个
-/// 文件，Stack 模型合并不进去。
-pub(crate) fn route_owns_catalog(route: &Provider) -> bool {
-    project(route).is_ok_and(|projection| row_catalog_pointer(&projection.top).is_some())
-}
-
-/// 去掉路由那家行里自己指定的模型目录指针之后的 `settings_config`；行里没有时为 `None`。
-pub(crate) fn settings_without_row_catalog(route: &Provider) -> Option<Value> {
-    let text = without_row_catalog(route.settings_config.get("config")?.as_str()?)?;
-    let mut settings = route.settings_config.clone();
-    settings
-        .as_object_mut()?
-        .insert("config".to_string(), Value::String(text));
-    Some(settings)
-}
-
-/// 代理契约的路由表从行的路由表照搬的客户端键：Codex 自己的重试和流空闲超时。
-const PROXY_KEPT_CLIENT_KEYS: &[&str] = &[
-    "request_max_retries",
-    "stream_max_retries",
-    "stream_idle_timeout_ms",
-];
-
-/// 发布了 Stack 模型时不写进 `config.toml` 的全局键：Codex 拿它们覆盖目录里的每一行。
-const STACK_SUNK_WINDOW_KEYS: &[&str] = &["model_context_window", "model_auto_compact_token_limit"];
-
-/// `[agents]` 里的子代理模型和推理强度（`floor::CODEX_FLOOR_NESTED` 的前两项）。
-fn is_subagent_key(path: &[String]) -> bool {
-    path.first().is_some_and(|table| table == "agents")
-}
-
-fn table_text(table: &Table) -> String {
-    let mut table = table.clone();
-    table.remove("requires_openai_auth");
-    let mut doc = toml_edit::DocumentMut::new();
-    doc.insert("t", Item::Table(table));
-    doc.to_string()
-}
 
 /// 读到的登录暂存。
 struct LoadedStash {

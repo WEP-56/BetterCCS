@@ -119,14 +119,6 @@ impl CostCalculator {
         }
     }
 
-    pub fn try_calculate_for_app(
-        app_type: &str,
-        usage: &TokenUsage,
-        pricing: Option<&ModelPricing>,
-        cost_multiplier: Decimal,
-    ) -> Option<CostBreakdown> {
-        pricing.map(|p| Self::calculate_for_app(app_type, usage, p, cost_multiplier))
-    }
 }
 
 impl ModelPricing {

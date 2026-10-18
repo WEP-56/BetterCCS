@@ -212,30 +212,6 @@ pub(crate) fn redact_url_for_log_with_secrets(url_str: &str, known_secrets: &[St
     redact_known_secrets(&sanitized, known_secrets)
 }
 
-/// 只保留 `scheme://host:port`，丢掉 path/query/userinfo。用于我们手里没有任何
-/// 已知密钥可脱敏 path 的场景——凭据可能整个内嵌在 base_url 的 path 里，此时
-/// 记录 path 无法保证不泄漏，只能退回到 origin。
-pub(crate) fn redact_url_origin_for_log(url_str: &str) -> String {
-    let scheme_relative = url_str.starts_with("//");
-    let parsed = if scheme_relative {
-        url::Url::parse(&format!("https:{url_str}"))
-    } else {
-        url::Url::parse(url_str)
-    };
-
-    match parsed {
-        Ok(url) if url.has_host() => {
-            let authority = &url[url::Position::BeforeHost..url::Position::AfterPort];
-            if scheme_relative {
-                format!("//{authority}")
-            } else {
-                format!("{}://{authority}", url.scheme())
-            }
-        }
-        _ => "[invalid target]".to_string(),
-    }
-}
-
 /// 给日志用的错误文本：去掉 TOML 解析诊断里引用的源码行（`1 | key = "..."` 和它上下的
 /// `|`、`^` 标注行）。那一行是用户配置原文，出错的可能正是密钥那一行；行列号和原因留着。
 pub(crate) fn error_for_log(error: &str) -> String {
@@ -2250,7 +2226,7 @@ fn relaunch_macos_bundle(env: &tauri::Env) {
 mod tests {
     use super::{
         classify_exit_request, error_for_log, redact_url_for_log, redact_url_for_log_with_secrets,
-        redact_url_origin_for_log, runtime_log_level_allows, ExitRequestAction,
+        runtime_log_level_allows, ExitRequestAction,
     };
 
     #[test]
@@ -2314,23 +2290,6 @@ mod tests {
         assert_eq!(
             redact_url_for_log_with_secrets("https://api.example.com/v1", &short_secrets),
             "https://api.example.com/v1"
-        );
-    }
-
-    #[test]
-    fn log_url_origin_drops_path_for_credential_in_path() {
-        // 没有已知密钥可脱敏时，凭据可能整个内嵌在 path，只记 origin。
-        assert_eq!(
-            redact_url_origin_for_log("https://gw.example.com/k-9f3a7c2b1e/v1"),
-            "https://gw.example.com"
-        );
-        assert_eq!(
-            redact_url_origin_for_log("https://user:pass@gw.example.com:8443/secret/v1"),
-            "https://gw.example.com:8443"
-        );
-        assert_eq!(
-            redact_url_origin_for_log("//gw.example.com/secret/v1"),
-            "//gw.example.com"
         );
     }
 

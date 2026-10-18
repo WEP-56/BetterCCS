@@ -76,14 +76,6 @@ impl LiveNow {
         }
     }
 
-    /// 客户端现在是哪个直连供应商写进去的（Grok 在没有写入记录时据此推断要删的表）。
-    fn direct_owner(&self) -> Option<&Provider> {
-        match self {
-            Self::Direct(provider) => provider.as_ref(),
-            Self::Legacy(_) => None,
-        }
-    }
-
     /// Codex 的客户端文件现在是谁写进去的。
     fn codex_owner(&self) -> Owner<'_> {
         match self {
